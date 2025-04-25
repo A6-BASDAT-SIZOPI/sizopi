@@ -1,94 +1,72 @@
-// src/app/page.tsx
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import supabase from '../lib/supabaseClient'
-
-type Todo = {
-  id: number
-  task: string
-  completed: boolean
-}
+import { Navbar } from "@/components/navbar"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function Home() {
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [newTask, setNewTask] = useState<string>('')
+  const { user, userRole, loading } = useAuth()
 
-  // Fetching data from Supabase
-  const fetchTodos = async () => {
-    const { data, error } = await supabase.from('todos').select('*')
-    if (error) {
-      console.error('Error fetching todos:', error)
-    } else {
-      setTodos(data || [])
+  const getWelcomeMessage = () => {
+    if (!user) return 'Selamat Datang di SIZOPI'
+    
+    if (userRole === 'pengunjung') {
+      return `Selamat Berkunjung, ${user.nama_depan}`
     }
+    return `Selamat Datang, ${user.nama_depan}`
   }
 
-  // Adding a new todo to Supabase
-const addTodo = async () => {
-  if (newTask) {
-    const { data, error } = await supabase.from('todos').insert([
-      { task: newTask, completed: false },
-    ])
+  const getRoleMessage = () => {
+    if (!userRole) return ''
 
-    if (error) {
-      console.error('Error adding todo:', error.message || error)
-    } else {
-      if (data) {
-        // If data is not null or undefined
-        if (Array.isArray(data)) {
-          // If data is an array, spread it into the state
-          setTodos([...todos, ...data])
-        } else {
-          // If data is not an array but an object, handle accordingly
-          console.error('Data returned is not an array:', data)
-        }
-      } else {
-        console.error('No data returned:', data)
-      }
-
-      setNewTask('') // Reset input after task is added
+    if (userRole === 'pengunjung') {
+      return 'Semoga harimu menyenangkan!'
     }
+    return 'Selamat bekerja dan semoga harimu menyenangkan!'
   }
-}
-
-  // Fetch todos on page load
-  useEffect(() => {
-    fetchTodos()
-  }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black-50">
-      <div className="max-w-2xl w-full p-6 bg-white rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold text-center text-blue-600 mb-6">To-Do List</h1>
-        <ul className="space-y-4">
-          {todos.map((todo) => (
-            <li
-              key={todo.id}
-              className={`flex justify-between items-center p-4 border-b ${todo.completed ? 'bg-gray-100 line-through' : 'bg-white'}`}
-            >
-              <span className={`text-lg ${todo.completed ? 'text-gray-500' : 'text-black'}`}>{todo.task}</span>
-            </li>
-          ))}
-        </ul>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
 
-        <h2 className="text-black text-2xl font-semibold mt-6 mb-4 text-center">Add a New Task</h2>
-        <div className="flex gap-4 justify-center">
-          <input
-            type="text"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            placeholder="New task"
-            className="text-black w-2/3 p-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={addTodo}
-            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-          >
-            Add Task
-          </button>
+      <main className="flex-grow flex flex-col items-center justify-center p-6 bg-gradient-to-b from-green-50 to-green-100">
+        <div className="max-w-4xl w-full text-center">
+          <h1 className="text-4xl font-bold text-green-800 mb-6">
+            {getWelcomeMessage()}
+          </h1>
+          
+          {user ? (
+            <div className="space-y-4">
+              <p className="text-xl text-green-700">
+                Role: <span className="font-semibold">{userRole}</span>
+              </p>
+              <p className="text-lg text-green-600">
+                {getRoleMessage()}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-xl text-green-700 mb-8">
+                Sistem Informasi Zoo Pintar - Mengelola kebun binatang dengan lebih efisien
+              </p>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button asChild className="bg-green-600 hover:bg-green-700">
+                  <Link href="/auth/login">Login</Link>
+                </Button>
+                <Button asChild variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                  <Link href="/auth/register">Register</Link>
+                </Button>
+              </div>
+            </>
+          )}
         </div>
-      </div>
+      </main>
+
+      <footer className="bg-green-800 text-white p-4 text-center">
+        <p>&copy; {new Date().getFullYear()} SIZOPI - Sistem Informasi Zoo Pintar</p>
+      </footer>
     </div>
   )
 }
