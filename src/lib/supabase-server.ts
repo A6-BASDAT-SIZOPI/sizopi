@@ -16,7 +16,7 @@ export const supabase = createClient(
       persistSession: true
     },
     db: {
-        schema: 'sizopi'
+        schema: 'public'
       }
   }
 )
