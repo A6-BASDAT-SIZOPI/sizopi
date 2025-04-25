@@ -204,7 +204,7 @@ export default function RegisterPengunjungPage() {
             <CardFooter className="flex justify-center">
               <p className="text-sm text-gray-500">
                 Sudah punya akun?{" "}
-                <Link href="/login" className="text-green-600 hover:underline">
+                <Link href="/auth/login" className="text-green-600 hover:underline">
                   Login
                 </Link>
               </p>
