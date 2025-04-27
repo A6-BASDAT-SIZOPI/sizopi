@@ -10,6 +10,7 @@ import Link from "next/link"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
+import { UserPlus } from 'lucide-react'
 
 type UserRole = "pengunjung" | "dokter_hewan" | "staff"
 
@@ -42,30 +43,36 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-grow flex items-center justify-center p-6 bg-gradient-to-b from-green-50 to-green-100">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Register</CardTitle>
-            <CardDescription className="text-center">Pilih peran Anda untuk mendaftar</CardDescription>
+      <main className="flex-grow flex items-center justify-center p-6" style={{ backgroundColor: "#FFECDB" }}>
+        <Card className="w-full max-w-md shadow-lg border-0 z-10 overflow-hidden bg-white">
+          <div className="h-2 bg-[#FF912F]"></div>
+          <CardHeader className="space-y-1 pt-6">
+            <div className="w-16 h-16 bg-[#FF912F]/10 rounded-full mx-auto flex items-center justify-center mb-2">
+              <UserPlus className="h-8 w-8 text-[#FF912F]" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center text-black">Daftar Akun</CardTitle>
+            <CardDescription className="text-center text-[#7A7A7A]">
+              Pilih peran Anda untuk mendaftar
+            </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 px-6 sm:px-8">
             <RadioGroup value={selectedRole || ""} onValueChange={(value: string) => handleRoleSelect(value as UserRole)}>
-              <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-green-50 cursor-pointer">
+              <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-[#FFECDB]/50 cursor-pointer">
                 <RadioGroupItem value="pengunjung" id="pengunjung" />
                 <Label htmlFor="pengunjung" className="flex-grow cursor-pointer">
                   Pengunjung
                 </Label>
               </div>
 
-              <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-green-50 cursor-pointer">
+              <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-[#FFECDB]/50 cursor-pointer">
                 <RadioGroupItem value="dokter_hewan" id="dokter_hewan" />
                 <Label htmlFor="dokter_hewan" className="flex-grow cursor-pointer">
                   Dokter Hewan
                 </Label>
               </div>
 
-              <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-green-50 cursor-pointer">
+              <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-[#FFECDB]/50 cursor-pointer">
                 <RadioGroupItem value="staff" id="staff" />
                 <Label htmlFor="staff" className="flex-grow cursor-pointer">
                   Staff
@@ -73,14 +80,28 @@ export default function RegisterPage() {
               </div>
             </RadioGroup>
 
-            <div className="flex justify-between">
-              <Link href="/auth/login" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+            <div className="flex justify-between pt-4">
+              <Link 
+                href="/auth/login" 
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+              >
                 Kembali ke Login
               </Link>
 
-              <Button onClick={handleContinue} disabled={!selectedRole} className="bg-green-600 hover:bg-green-700">
+              <Button 
+                onClick={handleContinue} 
+                disabled={!selectedRole} 
+                className="bg-[#FF912F] hover:bg-[#FF912F]/90"
+              >
                 Lanjutkan
               </Button>
+            </div>
+
+            <div className="text-center text-sm text-[#7A7A7A] pt-4">
+              Sudah punya akun?{" "}
+              <Link href="/auth/login" className="text-[#FF912F] font-medium hover:underline">
+                Login
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -117,7 +138,7 @@ export default function RegisterPage() {
                 <a href="#" className="hover:text-white/80">
                   <span className="sr-only">Twitter</span>
                   <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27a8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07a4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                   </svg>
                 </a>
               </div>
