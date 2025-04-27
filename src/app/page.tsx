@@ -6,9 +6,67 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { ArrowRight } from "lucide-react"
+import { createClient } from "@supabase/supabase-js"
+import { useEffect, useState } from "react"
+
+// Inisialisasi Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default function Home() {
   const { user, userRole, loading } = useAuth()
+  const [animalImages, setAnimalImages] = useState({
+    harimau: "/placeholder.svg?height=400&width=600",
+    orangutan: "/placeholder.svg?height=400&width=600",
+    rubah: "/placeholder.svg?height=400&width=600",
+  })
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchAnimalImages() {
+      try {
+        // Fetch Harimau Bengal Claw image
+        const { data: harimauData, error: harimauError } = await supabase
+          .from("hewan")
+          .select("url_foto")
+          .eq("nama", "Harimau Bengal Claw")
+          .single()
+
+        // Fetch Orangutan Borneo Kawan image
+        const { data: orangutanData, error: orangutanError } = await supabase
+          .from("hewan")
+          .select("url_foto")
+          .eq("nama", "Orangutan Borneo Kawan")
+          .single()
+
+        // Fetch Rubah Arktik Blitz image
+        const { data: rubahData, error: rubahError } = await supabase
+          .from("hewan")
+          .select("url_foto")
+          .eq("nama", "Rubah Arktik Blitz")
+          .single()
+
+        // Update state with fetched images
+        setAnimalImages({
+          harimau: harimauData?.url_foto || "/placeholder.svg?height=400&width=600",
+          orangutan: orangutanData?.url_foto || "/placeholder.svg?height=400&width=600",
+          rubah: rubahData?.url_foto || "/placeholder.svg?height=400&width=600",
+        })
+
+        // Log any errors
+        if (harimauError) console.error("Error fetching harimau image:", harimauError)
+        if (orangutanError) console.error("Error fetching orangutan image:", orangutanError)
+        if (rubahError) console.error("Error fetching rubah image:", rubahError)
+      } catch (error) {
+        console.error("Error fetching animal images:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAnimalImages()
+  }, [])
 
   const getWelcomeMessage = () => {
     if (!user) return "Selamat Datang di SIZOPI"
@@ -62,7 +120,11 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button asChild size="lg" className="bg-[#FF912F] hover:bg-[#E87F20] text-white hover:bg-white/20 font-bold">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-[#FF912F] hover:bg-[#E87F20] text-white hover:bg-white/20 font-bold"
+                >
                   <Link href="/auth/login">Masuk</Link>
                 </Button>
                 <Button asChild size="lg" className="bg-[#39B33A] text-white hover:bg-white/20 font-bold">
@@ -90,16 +152,22 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
               <div className="h-64 w-full relative">
-                <Image
-                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tiger_in_Ranthambhore.jpg/960px-Tiger_in_Ranthambhore.jpg?height=400&width=600"
-                  alt="Harimau Sumatera"
-                  fill
-                  className="object-cover"
-                />
+                {isLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <div className="w-10 h-10 border-4 border-[#FF912F] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <Image
+                    src={animalImages.harimau || "/placeholder.svg"}
+                    alt="Harimau Bengal Claw"
+                    fill
+                    className="object-cover"
+                  />
+                )}
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Harimau Sumatera</h3>
-                <p className="text-gray-600 mb-4">Spesies harimau yang hanya ditemukan di Pulau Sumatera, Indonesia.</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Harimau Bengal Claw</h3>
+                <p className="text-gray-600 mb-4">Spesies harimau yang terkenal dengan kekuatan dan kecepatannya.</p>
                 <Button
                   asChild
                   variant="outline"
@@ -112,15 +180,21 @@ export default function Home() {
 
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
               <div className="h-64 w-full relative">
-                <Image
-                  src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhD9gLJ6R7RTVsPP1AxJZiFNTIfWVlg0_6qLYTNALqzsMa4u2vYtRaMr0&s=10height=400&width=600"
-                  alt="Orangutan Kalimantan"
-                  fill
-                  className="object-cover"
-                />
+                {isLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <div className="w-10 h-10 border-4 border-[#FF912F] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <Image
+                    src={animalImages.orangutan || "/placeholder.svg"}
+                    alt="Orangutan Borneo Kawan"
+                    fill
+                    className="object-cover"
+                  />
+                )}
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Orangutan Kalimantan</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Orangutan Borneo Kawan</h3>
                 <p className="text-gray-600 mb-4">Primata cerdas yang hanya ditemukan di hutan hujan Kalimantan.</p>
                 <Button
                   asChild
@@ -134,17 +208,23 @@ export default function Home() {
 
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
               <div className="h-64 w-full relative">
-                <Image 
-                  src="https://upload.wikimedia.org/wikipedia/commons/8/83/Iceland-1979445_%28cropped_3%29.jpg" 
-                  alt="Rubah" 
-                  fill 
-                  className="object-cover" 
-                />
+                {isLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <div className="w-10 h-10 border-4 border-[#FF912F] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <Image
+                    src={animalImages.rubah || "/placeholder.svg"}
+                    alt="Rubah Arktik Blitz"
+                    fill
+                    className="object-cover"
+                  />
+                )}
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Rubah Arktik</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Rubah Arktik Blitz</h3>
                 <p className="text-gray-600 mb-4">
-                  Rubah terbesar di dunia yang hanya ditemukan di beberapa pulau di Antartika.
+                  Rubah dengan bulu putih tebal yang beradaptasi dengan lingkungan dingin Arktik.
                 </p>
                 <Button
                   asChild
@@ -190,7 +270,7 @@ export default function Home() {
                 <a href="#" className="hover:text-white/80">
                   <span className="sr-only">Twitter</span>
                   <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27a8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07a4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                   </svg>
                 </a>
               </div>
