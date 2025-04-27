@@ -32,9 +32,17 @@ export function Navbar() {
                 </Link>
 
                 {userRole === "dokter_hewan" && (
-                  <Link href="/rekam-medis" className="px-3 py-2 rounded-md hover:bg-green-600">
-                    Rekam Medis Hewan
-                  </Link>
+                  <>
+                    <Link href="/rekam-medis" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Rekam Medis
+                    </Link>
+                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Satwa
+                    </Link>
+                    <Link href="/jadwal-periksa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Jadwal Periksa
+                    </Link>
+                  </>
                 )}
 
                 {userRole === "penjaga_hewan" && (
@@ -75,7 +83,7 @@ export function Navbar() {
                 )}
 
                 <Link href="/profile" className="px-3 py-2 rounded-md hover:bg-green-600">
-                  Pengaturan Profil
+                  Profil
                 </Link>
 
                 <Button className="text-white hover:bg-green-600 hover:text-white" onClick={signOut}>
