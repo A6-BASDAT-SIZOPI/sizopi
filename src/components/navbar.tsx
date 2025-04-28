@@ -46,13 +46,27 @@ export function Navbar() {
                 )}
 
                 {userRole === "penjaga_hewan" && (
-                  <Link href="/catatan-perawatan" className="px-3 py-2 rounded-md hover:bg-green-600">
-                    Catatan Perawatan Hewan
-                  </Link>
+                  <>
+                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Satwa
+                    </Link>
+                    <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Habitat
+                    </Link>
+                    <Link href="/pakan" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Pemberian Pakan
+                    </Link>
+                  </>
                 )}
 
                 {userRole === "staf_admin" && (
                   <>
+                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Satwa
+                    </Link>
+                    <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Habitat
+                    </Link>
                     <Link href="/kelola-pengunjung" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Kelola Pengunjung
                     </Link>

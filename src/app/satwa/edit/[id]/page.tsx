@@ -25,23 +25,34 @@ const [formData, setFormData] = useState({
 const [errors, setErrors] = useState<Record<string, string>>({})
 const [isLoading, setIsLoading] = useState(true)
 
-// Fetch data satwa berdasarkan ID
 useEffect(() => {
     async function fetchAnimal() {
-    const { data, error } = await supabase
-        .from("hewan")
-        .select("*")
-        .eq("id", id)
-        .single()
+        const { data, error } = await supabase
+            .from("hewan")
+            .select("*")
+            .eq("id", id)
+            .single()
 
-    if (error) {
-        console.error("Error fetching animal:", error)
-        router.push("/satwa") // Redirect jika data tidak ditemukan
-        return
-    }
+        if (error) {
+            console.error("Error fetching animal:", error)
+            router.push("/satwa") // Redirect jika data tidak ditemukan
+            return
+        }
 
-    setFormData(data)
-    setIsLoading(false)
+        // Ganti nilai null dengan string kosong
+        const sanitizedData = {
+            ...data,
+            nama: data.nama || "",
+            spesies: data.spesies || "",
+            asal_hewan: data.asal_hewan || "",
+            tanggal_lahir: data.tanggal_lahir || "",
+            status_kesehatan: data.status_kesehatan || "Sehat",
+            nama_habitat: data.nama_habitat || "",
+            url_foto: data.url_foto || "",
+        }
+
+        setFormData(sanitizedData)
+        setIsLoading(false)
     }
 
     fetchAnimal()
@@ -63,7 +74,6 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
 
 const validate = () => {
     const newErrors: Record<string, string> = {}
-    if (!formData.nama) newErrors.nama = "Nama harus diisi"
     if (!formData.spesies) newErrors.spesies = "Spesies harus diisi"
     if (!formData.asal_hewan) newErrors.asal_hewan = "Asal hewan harus diisi"
     if (!formData.status_kesehatan) newErrors.status_kesehatan = "Status kesehatan harus dipilih"
@@ -76,22 +86,31 @@ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
 
-    try {
-    const { error } = await supabase
-        .from("hewan")
-        .update(formData)
-        .eq("id", id)
-
-    if (error) {
-        console.error("Error updating data:", error)
-        alert("Gagal memperbarui data")
-        return
+    const dataToSubmit = {
+        ...formData,
+        tanggal_lahir: formData.tanggal_lahir || null, // Ubah string kosong menjadi null
     }
 
-    alert("Data berhasil diperbarui!")
-    router.push("/satwa")
+    console.log("Data yang dikirim:", dataToSubmit) // Log data yang dikirim
+
+    try {
+        const { data, error } = await supabase
+            .from("hewan")
+            .update(dataToSubmit)
+            .eq("id", id)
+
+        console.log("Respons dari Supabase:", { data, error }) // Log respons dari Supabase
+
+        if (error) {
+            console.error("Error updating data:", error)
+            alert(`Gagal memperbarui data: ${error.message || "Unknown error"}`)
+            return
+        }
+
+        alert("Data berhasil diperbarui!")
+        router.push("/satwa")
     } catch (error) {
-    console.error("Error submitting form:", error)
+        console.error("Unexpected error:", error)
     }
 }
 
@@ -117,7 +136,7 @@ return (
                     type="text"
                     id="nama"
                     name="nama"
-                    value={formData.nama}
+                    value={formData.nama || ""}
                     onChange={handleChange}
                     className="w-full border rounded-md p-2"
                 />
@@ -159,7 +178,7 @@ return (
                     type="date"
                     id="tanggal_lahir"
                     name="tanggal_lahir"
-                    value={formData.tanggal_lahir}
+                    value={formData.tanggal_lahir || ""}
                     onChange={handleChange}
                     className="w-full border rounded-md p-2"
                 />

@@ -1,26 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { useEffect, useState } from "react"
 import { createClient } from "@supabase/supabase-js"
 import { Navbar } from "@/components/navbar"
-import { PencilIcon, TrashIcon, PlusIcon, XIcon } from "lucide-react"
+import { PencilIcon, TrashIcon, PlusIcon, XIcon, InfoIcon } from "lucide-react"
 
 // Inisialisasi Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-interface Animal {
-    id: number
+interface Habitat {
     nama: string
-    spesies: string
-    asal_hewan: string
-    tanggal_lahir: string
-    status_kesehatan: string
-    nama_habitat: string
-    url_foto: string
+    luas_area: number
+    kapasitas: number
+    status: string
 }
 
 function Modal({
@@ -28,7 +23,7 @@ function Modal({
     onClose,
     title,
     children,
-    }: {
+}: {
     isOpen: boolean
     onClose: () => void
     title: string
@@ -62,66 +57,62 @@ return (
 )
 }
 
-export default function DataSatwa() {
-const [animals, setAnimals] = useState<Animal[]>([])
+export default function DataHabitat() {
+const [habitats, setHabitats] = useState<Habitat[]>([])
 const [isLoading, setIsLoading] = useState(true)
 const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null)
+const [habitatToDelete, setHabitatToDelete] = useState<Habitat | null>(null)
 
 useEffect(() => {
-    async function fetchAnimals() {
+    async function fetchHabitats() {
     try {
         const { data, error } = await supabase
-        .from("hewan")
-        .select("id, nama, spesies, asal_hewan, tanggal_lahir, status_kesehatan, nama_habitat, url_foto")
+        .from("habitat")
+        .select("nama, luas_area, kapasitas, status")
 
         if (error) {
         console.error("Error fetching data:", error)
         return
         }
 
-        setAnimals(data || [])
+        setHabitats(data || [])
     } catch (error) {
-        console.error("Error fetching animals:", error)
+        console.error("Error fetching habitats:", error)
     } finally {
         setIsLoading(false)
     }
     }
 
-    fetchAnimals()
+    fetchHabitats()
 }, [])
 
-const handleEdit = (animal: Animal) => {
-    console.log(`Edit animal with ID: ${animal.id}`)
-}
-
-const handleDeleteClick = (animal: Animal) => {
-    setAnimalToDelete(animal)
+const handleDeleteClick = (habitat: Habitat) => {
+    setHabitatToDelete(habitat)
     setIsDeleteModalOpen(true)
 }
 
 const confirmDelete = async () => {
-    if (!animalToDelete) return
+    if (!habitatToDelete) return
 
     try {
-    const { error } = await supabase.from("hewan").delete().eq("id", animalToDelete.id)
+    const { error } = await supabase.from("habitat").delete().eq("nama", habitatToDelete.nama)
     if (error) {
         console.error("Error deleting data:", error)
         return
     }
 
-    setAnimals((prev) => prev.filter((a) => a.id !== animalToDelete.id))
+    setHabitats((prev) => prev.filter((h) => h.nama !== habitatToDelete.nama))
     setIsDeleteModalOpen(false)
-    setAnimalToDelete(null)
-    alert("Data berhasil dihapus!")
+    setHabitatToDelete(null)
+    alert("Data habitat berhasil dihapus!")
     } catch (error) {
-    console.error("Error deleting animal:", error)
+    console.error("Error deleting habitat:", error)
     }
 }
 
 const cancelDelete = () => {
     setIsDeleteModalOpen(false)
-    setAnimalToDelete(null)
+    setHabitatToDelete(null)
 }
 
 return (
@@ -133,20 +124,20 @@ return (
             <div className="h-2 bg-[#FF912F]" />
             <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Data Satwa</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Data Habitat</h1>
                 <button
-                    className="flex items-center px-4 py-2 bg-[#FF912F] text-white rounded-md hover:bg-[#FF912F]/90 transition-colors"
-                    >
-                    <Link href="/satwa/create" className="flex items-center">
-                        <PlusIcon size={16} className="mr-1" />
-                        <span>Tambah Satwa</span>
-                    </Link>
+                className="flex items-center px-4 py-2 bg-[#FF912F] text-white rounded-md hover:bg-[#FF912F]/90 transition-colors"
+                >
+                <Link href="/habitat/create" className="flex items-center">
+                    <PlusIcon size={16} className="mr-1" />
+                    <span>Tambah Habitat</span>
+                </Link>
                 </button>
             </div>
             {isLoading ? (
                 <div className="text-center py-8 text-gray-500">Memuat data...</div>
-            ) : animals.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">Belum ada data satwa yang terdaftar.</div>
+            ) : habitats.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Belum ada data habitat yang terdaftar.</div>
             ) : (
                 <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -156,22 +147,13 @@ return (
                         Nama
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Spesies
+                        Luas Area
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Asal Hewan
+                        Kapasitas
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tanggal Lahir
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status Kesehatan
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Habitat
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Foto
+                        Status
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Aksi
@@ -179,52 +161,41 @@ return (
                     </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                    {animals.map((animal) => (
-                        <tr key={animal.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap">{animal.nama}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">{animal.spesies}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">{animal.asal_hewan}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">{animal.tanggal_lahir}</td>
+                    {habitats.map((habitat) => (
+                        <tr key={habitat.nama} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 whitespace-nowrap">{habitat.nama}</td>
+                        <td className="px-4 py-4 whitespace-nowrap">{habitat.luas_area} m²</td>
+                        <td className="px-4 py-4 whitespace-nowrap">{habitat.kapasitas} hewan</td>
                         <td className="px-4 py-4 whitespace-nowrap">
                             <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                animal.status_kesehatan === "sehat"
+                                habitat.status === "tersedia"
                                 ? "bg-green-100 text-green-800"
-                                : animal.status_kesehatan === "sakit"
+                                : habitat.status === "perbaikan"
                                 ? "bg-red-100 text-red-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                             >
-                            {animal.status_kesehatan}
+                            {habitat.status}
                             </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">{animal.nama_habitat}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                            {animal.url_foto ? (
-                            <img
-                                src={animal.url_foto}
-                                alt={animal.nama}
-                                className="h-12 w-12 object-cover rounded-md"
-                            />
-                            ) : (
-                            <div className="h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
-                                No Img
-                            </div>
-                            )}
-                        </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
+                        <div className="flex space-x-2">
+                            {/* Tombol Detail */}
+                            <Link href={`/habitat/${habitat.nama}`} className="text-grey-500 hover:text-blue-900">
+                                <InfoIcon size={18} />
+                                <span className="sr-only">Detail</span>
+                            </Link>
+                            
+                            {/* Tombol Edit */}
+                            <Link href={`/habitat/edit/${habitat.nama}`} className="text-indigo-600 hover:text-indigo-900">
+                                <PencilIcon size={18} />
+                                <span className="sr-only">Edit</span>
+                            </Link>
+                            
+                            {/* Tombol Delete */}
                             <button
-                                onClick={() => handleEdit(animal)}
-                                className="text-indigo-600 hover:text-indigo-900"
-                            >
-                                <Link href={`/satwa/edit/${animal.id}`} className="text-indigo-600 hover:text-indigo-900">
-                                    <PencilIcon size={18} />
-                                    <span className="sr-only">Edit</span>
-                                </Link>
-                            </button>
-                            <button
-                                onClick={() => handleDeleteClick(animal)}
+                                onClick={() => handleDeleteClick(habitat)}
                                 className="text-red-600 hover:text-red-900"
                             >
                                 <TrashIcon size={18} />
@@ -246,27 +217,28 @@ return (
         isOpen={isDeleteModalOpen}
         onClose={cancelDelete}
         title="Konfirmasi Hapus"
-    >
+        >
         <div className="p-6">
-        <p className="text-gray-700 mb-6">
-            Apakah Anda yakin ingin menghapus data satwa{' '}
-            <span className="font-semibold">{animalToDelete?.nama}</span>?
-        </p>
-        <div className="flex justify-end gap-3">
+            <p className="text-gray-700 mb-6">
+            Apakah Anda yakin ingin menghapus data habitat{' '}
+            <span className="font-semibold">{habitatToDelete?.nama}</span>?
+            </p>
+            <div className="flex justify-end gap-3">
             <button
-            onClick={cancelDelete}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
             >
-            Batal
+                Batal
             </button>
             <button
-            onClick={confirmDelete}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
             >
-            Hapus
+                Hapus
             </button>
-        </div>
+            </div>
         </div>
     </Modal>
     </div>
-)}
+)
+}
