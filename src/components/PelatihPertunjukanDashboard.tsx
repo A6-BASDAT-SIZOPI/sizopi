@@ -1,4 +1,5 @@
 // src/app/dashboard/components/PelatihPertunjukanDashboard.tsx
+"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-server";
 import { PelatihPertunjukanProfile } from "@/types/types";
