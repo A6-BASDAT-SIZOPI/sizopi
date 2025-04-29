@@ -15,7 +15,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default function Home() {
-  const { user, userRole, loading } = useAuth()
+  const { user, userRole } = useAuth();
   const [animalImages, setAnimalImages] = useState({
     harimau: "/placeholder.svg?height=400&width=600",
     orangutan: "/placeholder.svg?height=400&width=600",
@@ -26,47 +26,34 @@ export default function Home() {
   useEffect(() => {
     async function fetchAnimalImages() {
       try {
-        // Fetch Harimau Bengal Claw image
-        const { data: harimauData, error: harimauError } = await supabase
-          .from("hewan")
-          .select("url_foto")
-          .eq("nama", "Harimau Bengal Claw")
-          .single()
+    const { data, error } = await supabase
+      .from("hewan")
+      .select("nama, url_foto")
+      .in("nama", ["Harimau Bengal Claw", "Orangutan Borneo Kawan", "Rubah Arktik Blitz"]);
 
-        // Fetch Orangutan Borneo Kawan image
-        const { data: orangutanData, error: orangutanError } = await supabase
-          .from("hewan")
-          .select("url_foto")
-          .eq("nama", "Orangutan Borneo Kawan")
-          .single()
+    if (error) {
+      console.error("Error fetching animal images:", error);
+    } else if (data) {
+      const images = {
+        harimau: data.find((item) => item.nama === "Harimau Bengal Claw")?.url_foto || "/placeholder.svg?height=400&width=600",
+        orangutan: data.find((item) => item.nama === "Orangutan Borneo Kawan")?.url_foto || "/placeholder.svg?height=400&width=600",
+        rubah: data.find((item) => item.nama === "Rubah Arktik Blitz")?.url_foto || "/placeholder.svg?height=400&width=600",
+      };
 
-        // Fetch Rubah Arktik Blitz image
-        const { data: rubahData, error: rubahError } = await supabase
-          .from("hewan")
-          .select("url_foto")
-          .eq("nama", "Rubah Arktik Blitz")
-          .single()
+      setAnimalImages(images);
+    }
 
-        // Update state with fetched images
-        setAnimalImages({
-          harimau: harimauData?.url_foto || "/placeholder.svg?height=400&width=600",
-          orangutan: orangutanData?.url_foto || "/placeholder.svg?height=400&width=600",
-          rubah: rubahData?.url_foto || "/placeholder.svg?height=400&width=600",
-        })
+    setIsLoading(false);
 
-        // Log any errors
-        if (harimauError) console.error("Error fetching harimau image:", harimauError)
-        if (orangutanError) console.error("Error fetching orangutan image:", orangutanError)
-        if (rubahError) console.error("Error fetching rubah image:", rubahError)
       } catch (error) {
-        console.error("Error fetching animal images:", error)
+        console.error("Unexpected error:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchAnimalImages()
-  }, [])
+    fetchAnimalImages();
+  }, []);
 
   const getWelcomeMessage = () => {
     if (!user) return "Selamat Datang di SIZOPI"

@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from '@/lib/supabase-server'
 
-type UserRole = "pengunjung" | "dokter_hewan" | "penjaga_hewan" | "staf_admin" | "pelatih_hewan" | null
+type UserRole = "pengunjung" | "dokter_hewan" | "penjaga_hewan" | "staf_admin" | "pelatih_hewan" | "adopter" | null
 
-// Tambahkan interface untuk data user dari tabel pengguna
 interface UserProfile {
   username: string
   email: string
@@ -42,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: { session },
         error,
       } = await supabase.auth.getSession()
+
       if (error) {
         console.error(error)
         setLoading(false)
@@ -59,53 +59,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single()
 
         if (!userError && userData) {
-          setUser(userData)
-          const role = await getUserRole(userData.email)
-          setUserRole(role)
-        }
-      }
+          setUser({
+            username: userData.username,
+            email: userData.email,
+            nama_depan: userData.nama_depan,
+            nama_tengah: userData.nama_tengah,
+            nama_belakang: userData.nama_belakang,
+            no_telepon: userData.no_telepon,
+          })
 
-      setLoading(false)
-    }
+          // Periksa apakah user adalah adopter
+          const { data: adopterData, error: adopterError } = await supabase
+            .from("adopter")
+            .select("*")
+            .eq("username_adopter", userData.username)
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-
-      if (session?.user) {
-        // Ambil data lengkap user dari tabel pengguna
-        const { data: userData, error: userError } = await supabase
-          .from("pengguna")
-          .select("*")
-          .eq("email", session.user.email)
-          .single()
-
-        if (!userError && userData) {
-          setUser(userData)
-          const role = await getUserRole(userData.email)
-          setUserRole(role)
+          if (!adopterError && adopterData.length > 0) {
+            setUserRole("adopter")
+          } else {
+            setUserRole(userData.role)
+          }
+        } else {
+          console.error("Error fetching user data:", userError)
+          setUserRole(null)
         }
       } else {
-        setUser(null)
         setUserRole(null)
       }
 
       setLoading(false)
-    })
+    }
 
     setData()
-
-    return () => {
-      subscription.unsubscribe()
-    }
   }, [])
 
   const getUserRole = async (email: string): Promise<UserRole> => {
     try {
-      // First, get the username from the email
       const { data: userData, error: userError } = await supabase
-        .from("PENGGUNA")
+        .from("pengguna")
         .select("username")
         .eq("email", email)
         .single()
@@ -117,7 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const username = userData.username
 
-      // Check each role table
       const { data: pengunjungData } = await supabase
         .from("pengunjung")
         .select("*")
@@ -158,6 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (pelatihData) return "pelatih_hewan"
 
+      const { data: adopterData } = await supabase
+        .from("adopter")
+        .select("*")
+        .eq("username_adopter", username)
+        .single()
+
+      if (adopterData) return "adopter"
+
       return null
     } catch (error) {
       console.error("Error determining user role:", error)
@@ -167,9 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Attempting login with:", { email, password })
-
-      // 1. Cek dulu di tabel PENGGUNA
       const { data: userData, error: userError } = await supabase
         .from("pengguna")
         .select("*")
@@ -177,16 +172,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("password", password)
         .single()
 
-      console.log("Query result:", { userData, userError })
-
       if (userError || !userData) {
         return { error: { message: "Email atau password salah" } }
       }
 
-      // Setelah dapat username, cek rolenya dengan cara yang sama
       const username = userData.username
-      
-      // Cek di setiap tabel role dengan prefix schema
+
       const { data: pengunjungData } = await supabase
         .from("pengunjung")
         .select("*")
@@ -208,11 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null }
       }
 
-      const { data: penjagaData } = await supabase
-        .from("penjaga_hewan")
-        .select("*")
-        .eq("username_jh", username)
-        .single()
+      const { data: penjagaData } = await supabase.from("penjaga_hewan").select("*").eq("username_jh", username).single()
       if (penjagaData) {
         setUser(userData)
         setUserRole("penjaga_hewan")
@@ -228,15 +215,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null }
       }
 
-      const { data: pelatihData } = await supabase
-        .from("pelatih_hewan")
-        .select("*")
-        .eq("username_lh", username)
-        .single()
+      const { data: pelatihData } = await supabase.from("pelatih_hewan").select("*").eq("username_lh", username).single()
       if (pelatihData) {
         setUser(userData)
         setUserRole("pelatih_hewan")
         router.push(`/dashboard/${userData.role}`)
+        return { error: null }
+      }
+
+      const { data: adopterData } = await supabase.from("adopter").select("*").eq("username_adopter", username).single()
+      if (adopterData) {
+        setUser(userData)
+        setUserRole("adopter")
+        router.push(`/dashboard/adopter`)
         return { error: null }
       }
 
