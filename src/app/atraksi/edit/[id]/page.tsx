@@ -50,12 +50,12 @@ export default function EditAtraksiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      if (!user) {
         router.push("/auth/login")
         return
       }
 
-      if (canManage) {
+      if (!canManage) {
         alert("Anda tidak memiliki izin untuk mengakses halaman ini")
         router.push("/atraksi")
         return

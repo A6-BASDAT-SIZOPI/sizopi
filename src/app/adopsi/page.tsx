@@ -35,10 +35,7 @@ export default function AdopsiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
-        router.push("/auth/login")
-        return
-      }
+      
       fetchHewan()
     }
   }, [user, loading])

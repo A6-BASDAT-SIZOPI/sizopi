@@ -82,12 +82,12 @@ export default function AdminReservasiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      if (!user) {
         router.push("/auth/login")
         return
       }
 
-      if (["staf_admin", "penjaga_hewan"].includes(userRole || "")) {
+      if (!["staf_admin", "penjaga_hewan"].includes(userRole || "")) {
         toast({
           title: "Akses Ditolak",
           description: "Anda tidak memiliki izin untuk mengakses halaman ini",

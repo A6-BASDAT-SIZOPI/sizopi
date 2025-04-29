@@ -85,12 +85,12 @@ export default function DetailAdopsiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      if (!user) {
         router.push("/auth/login")
         return
       }
 
-      //setIsAdmin(userRole === "staf_admin")
+      setIsAdmin(userRole === "staf_admin")
       fetchData()
     }
   }, [user, loading, hewanId])
