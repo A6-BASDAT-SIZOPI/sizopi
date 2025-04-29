@@ -10,6 +10,14 @@ import { ArrowRight } from "lucide-react"
 export default function Home() {
   const { user, userRole, loading } = useAuth()
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    )
+  }
+
   const getWelcomeMessage = () => {
     if (!user) return "Selamat Datang di SIZOPI"
 
@@ -58,10 +66,10 @@ export default function Home() {
           ) : (
             <>
               <p className="text-xl sm:text-2xl text-white mb-8 max-w-3xl mx-auto drop-shadow-lg">
-                Sistem Informasi Zoo Pintar - Mengelola kebun binatang dengan lebih efisien
-              </p>
+            Sistem Informasi Zoo Pintar - Mengelola kebun binatang dengan lebih efisien
+          </p>
 
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button asChild size="lg" className="bg-[#FF912F] hover:bg-[#E87F20] text-white hover:bg-white/20 font-bold">
                   <Link href="/auth/login">Masuk</Link>
                 </Button>
@@ -128,7 +136,7 @@ export default function Home() {
                   className="w-full border-[#FF912F] text-[#FF912F] hover:bg-[#FF912F] hover:text-white"
                 >
                   <Link href="#">Pelajari Lebih Lanjut</Link>
-                </Button>
+            </Button>
               </div>
             </div>
 
@@ -152,7 +160,7 @@ export default function Home() {
                   className="w-full border-[#FF912F] text-[#FF912F] hover:bg-[#FF912F] hover:text-white"
                 >
                   <Link href="#">Pelajari Lebih Lanjut</Link>
-                </Button>
+            </Button>
               </div>
             </div>
           </div>

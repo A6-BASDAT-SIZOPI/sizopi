@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 type UserRole = "pengunjung" | "dokter_hewan" | "staff"
 
 export default function RegisterPage() {
-  const { user } = useAuth()
+  const { user, userRole, loading } = useAuth()
   const router = useRouter()
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
 
@@ -27,6 +27,15 @@ export default function RegisterPage() {
 
   // Jika user sudah login, tidak render apapun (karena akan di-redirect)
   if (user) return null
+
+  // Tampilkan loader sederhana, atau bisa juga Skeleton UI
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-green-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role)
