@@ -39,7 +39,6 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
 
 const validate = () => {
     const newErrors: Record<string, string> = {}
-    if (!formData.nama) newErrors.nama = "Nama harus diisi"
     if (!formData.spesies) newErrors.spesies = "Spesies harus diisi"
     if (!formData.asal_hewan) newErrors.asal_hewan = "Asal hewan harus diisi"
     if (!formData.status_kesehatan) newErrors.status_kesehatan = "Status kesehatan harus dipilih"
@@ -52,17 +51,25 @@ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
 
-    try {
-    const { error } = await supabase.from("hewan").insert([formData])
-    if (error) {
-        console.error("Error adding data:", error)
-        alert("Gagal menambahkan data")
-        return
+    const dataToSubmit = {
+        ...formData,
+        nama: formData.nama || "-",
+        tanggal_lahir: formData.tanggal_lahir || null,
     }
-    alert("Data berhasil ditambahkan!")
-    router.push("/satwa")
+
+    console.log("Data yang dikirim:", dataToSubmit) // Log data yang dikirim
+
+    try {
+        const { data, error } = await supabase.from("hewan").insert([dataToSubmit])
+        if (error) {
+            console.error("Error adding data:", error)
+            alert(`Gagal menambahkan data: ${error.message || "Unknown error"}`)
+            return
+        }
+        alert("Data berhasil ditambahkan!")
+        router.push("/satwa")
     } catch (error) {
-    console.error("Error submitting form:", error)
+        console.error("Unexpected error:", error)
     }
 }
 

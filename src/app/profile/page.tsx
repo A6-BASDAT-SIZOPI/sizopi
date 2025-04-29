@@ -55,6 +55,7 @@ export default function ProfileSettings() {
       }
 
       console.log("Current user:", user)
+      console.log("Role user:", user?.role)
       fetchUserData()
     }
   }, [user, loading])
