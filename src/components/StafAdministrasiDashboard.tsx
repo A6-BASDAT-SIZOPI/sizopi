@@ -1,4 +1,7 @@
 // src/app/dashboard/components/StafAdministrasiDashboard.tsx
+
+"use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-server";
 import { StafAdministrasiProfile } from "@/types/types";
