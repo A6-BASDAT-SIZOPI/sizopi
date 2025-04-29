@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
-    userRole: user?.role || "", 
+    userRole: user?.role || null,    
     loading: status === "loading" || loading,
     signIn,
     signOut,
