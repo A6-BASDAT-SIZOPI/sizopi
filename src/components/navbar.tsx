@@ -32,19 +32,41 @@ export function Navbar() {
                 </Link>
 
                 {userRole === "dokter_hewan" && (
-                  <Link href="/rekam-medis" className="px-3 py-2 rounded-md hover:bg-green-600">
-                    Rekam Medis Hewan
-                  </Link>
+                  <>
+                    <Link href="/rekam-medis" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Rekam Medis
+                    </Link>
+                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Satwa
+                    </Link>
+                    <Link href="/jadwal-periksa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Jadwal Periksa
+                    </Link>
+                  </>
                 )}
 
                 {userRole === "penjaga_hewan" && (
-                  <Link href="/catatan-perawatan" className="px-3 py-2 rounded-md hover:bg-green-600">
-                    Catatan Perawatan Hewan
-                  </Link>
+                  <>
+                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Satwa
+                    </Link>
+                    <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Habitat
+                    </Link>
+                    <Link href="/pakan" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Pemberian Pakan
+                    </Link>
+                  </>
                 )}
 
                 {userRole === "staf_admin" && (
                   <>
+                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Satwa
+                    </Link>
+                    <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Data Habitat
+                    </Link>
                     <Link href="/kelola-pengunjung" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Kelola Pengunjung
                     </Link>
@@ -68,6 +90,14 @@ export function Navbar() {
                     <Link href="/informasi-kebun" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Informasi Kebun Binatang
                     </Link>
+                  </>
+                )}
+
+                {userRole === "adopter" && (
+                  <>
+                    <Link href="/informasi-kebun" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Informasi Kebun Binatang
+                    </Link>
                     <Link href="/hewan-adopsi" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Hewan Adopsi
                     </Link>
@@ -75,7 +105,7 @@ export function Navbar() {
                 )}
 
                 <Link href="/profile" className="px-3 py-2 rounded-md hover:bg-green-600">
-                  Pengaturan Profil
+                  Profil
                 </Link>
 
                 <Button className="text-white hover:bg-green-600 hover:text-white" onClick={signOut}>

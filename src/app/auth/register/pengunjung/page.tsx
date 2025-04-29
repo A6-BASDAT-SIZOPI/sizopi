@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { registerPengunjung } from "@/app/actions/auth-actions"
+import { UserPlus, User, Mail, Phone, Home, Calendar } from "lucide-react"
 
 export default function RegisterPengunjungPage() {
   const [formData, setFormData] = useState({
@@ -51,10 +52,10 @@ export default function RegisterPengunjungPage() {
     try {
       console.log("Mencoba mendaftarkan user dengan data:", {
         ...formData,
-        password: '[DIHILANGKAN]', // Jangan log password
-        confirmPassword: '[DIHILANGKAN]'
+        password: "[DIHILANGKAN]", // Jangan log password
+        confirmPassword: "[DIHILANGKAN]",
       })
-      
+
       const result = await registerPengunjung(formData)
 
       if (!result.success) {
@@ -68,7 +69,7 @@ export default function RegisterPengunjungPage() {
       console.error("Error detail:", {
         message: err.message,
         error: err,
-        stack: err.stack
+        stack: err.stack,
       })
       setError(err.message || "Terjadi kesalahan saat mendaftar")
     } finally {
@@ -80,131 +81,233 @@ export default function RegisterPengunjungPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-grow p-6 bg-gradient-to-b from-green-50 to-green-100">
+      <main className="flex-grow p-6" style={{ backgroundColor: "#FFECDB" }}>
         <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Registrasi Pengunjung</CardTitle>
-              <CardDescription className="text-center">
+          <Card className="shadow-lg border-0 overflow-hidden bg-white">
+            <div className="h-2 bg-[#FF912F]"></div>
+            <CardHeader className="space-y-1 pt-6">
+              <div className="w-16 h-16 bg-[#FF912F]/10 rounded-full mx-auto flex items-center justify-center mb-2">
+                <UserPlus className="h-8 w-8 text-[#FF912F]" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-center text-black">Registrasi Pengunjung</CardTitle>
+              <CardDescription className="text-center text-[#7A7A7A]">
                 Isi form berikut untuk mendaftar sebagai pengunjung
               </CardDescription>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="px-6 sm:px-8">
               {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="mb-4 border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
                 </Alert>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input id="username" name="username" value={formData.username} onChange={handleChange} required />
+                  <Label htmlFor="username" className="text-sm font-medium text-[#7A7A7A]">
+                    Username
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#7A7A7A]" />
+                    <Input
+                      id="username"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className="pl-10 border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-[#7A7A7A]">
+                    Password
+                  </Label>
                   <Input
                     id="password"
                     name="password"
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
+                    className="border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-[#7A7A7A]">
+                    Konfirmasi Password
+                  </Label>
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    className="border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nama_depan">Nama Depan</Label>
+                    <Label htmlFor="nama_depan" className="text-sm font-medium text-[#7A7A7A]">
+                      Nama Depan
+                    </Label>
                     <Input
                       id="nama_depan"
                       name="nama_depan"
                       value={formData.nama_depan}
                       onChange={handleChange}
+                      className="border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nama_tengah">Nama Tengah (opsional)</Label>
-                    <Input id="nama_tengah" name="nama_tengah" value={formData.nama_tengah} onChange={handleChange} />
+                    <Label htmlFor="nama_tengah" className="text-sm font-medium text-[#7A7A7A]">
+                      Nama Tengah (opsional)
+                    </Label>
+                    <Input
+                      id="nama_tengah"
+                      name="nama_tengah"
+                      value={formData.nama_tengah}
+                      onChange={handleChange}
+                      className="border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nama_belakang">Nama Belakang</Label>
+                    <Label htmlFor="nama_belakang" className="text-sm font-medium text-[#7A7A7A]">
+                      Nama Belakang
+                    </Label>
                     <Input
                       id="nama_belakang"
                       name="nama_belakang"
                       value={formData.nama_belakang}
                       onChange={handleChange}
+                      className="border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+                  <Label htmlFor="email" className="text-sm font-medium text-[#7A7A7A]">
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#7A7A7A]" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="pl-10 border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="no_telepon">Nomor Telepon</Label>
-                  <Input
-                    id="no_telepon"
-                    name="no_telepon"
-                    value={formData.no_telepon}
-                    onChange={handleChange}
-                    required
-                  />
+                  <Label htmlFor="no_telepon" className="text-sm font-medium text-[#7A7A7A]">
+                    Nomor Telepon
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#7A7A7A]" />
+                    <Input
+                      id="no_telepon"
+                      name="no_telepon"
+                      value={formData.no_telepon}
+                      onChange={handleChange}
+                      className="pl-10 border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="alamat">Alamat Lengkap</Label>
-                  <Input id="alamat" name="alamat" value={formData.alamat} onChange={handleChange} required />
+                  <Label htmlFor="alamat" className="text-sm font-medium text-[#7A7A7A]">
+                    Alamat Lengkap
+                  </Label>
+                  <div className="relative">
+                    <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#7A7A7A]" />
+                    <Input
+                      id="alamat"
+                      name="alamat"
+                      value={formData.alamat}
+                      onChange={handleChange}
+                      className="pl-10 border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tgl_lahir">Tanggal Lahir</Label>
-                  <Input
-                    id="tgl_lahir"
-                    name="tgl_lahir"
-                    type="date"
-                    value={formData.tgl_lahir}
-                    onChange={handleChange}
-                    required
-                  />
+                  <Label htmlFor="tgl_lahir" className="text-sm font-medium text-[#7A7A7A]">
+                    Tanggal Lahir
+                  </Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#7A7A7A]" />
+                    <Input
+                      id="tgl_lahir"
+                      name="tgl_lahir"
+                      type="date"
+                      value={formData.tgl_lahir}
+                      onChange={handleChange}
+                      className="pl-10 border-[#F5F5F5] focus:border-[#FF912F] focus:ring-[#FF912F]"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-between pt-4">
-                  <Link href="/auth/register" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                  <Link
+                    href="/auth/register"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                  >
                     Kembali
                   </Link>
 
-                  <Button type="submit" className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
-                    {isLoading ? "Mendaftar..." : "Daftar"}
+                  <Button type="submit" className="bg-[#FF912F] hover:bg-[#FF912F]/90" disabled={isLoading}>
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Mendaftar...
+                      </div>
+                    ) : (
+                      "Daftar"
+                    )}
                   </Button>
                 </div>
               </form>
             </CardContent>
 
-            <CardFooter className="flex justify-center">
-              <p className="text-sm text-gray-500">
+            <CardFooter className="flex justify-center px-6 sm:px-8 pb-6">
+              <p className="text-sm text-[#7A7A7A]">
                 Sudah punya akun?{" "}
-                <Link href="/auth/login" className="text-green-600 hover:underline">
+                <Link href="/auth/login" className="text-[#FF912F] font-medium hover:underline">
                   Login
                 </Link>
               </p>
@@ -244,7 +347,7 @@ export default function RegisterPengunjungPage() {
                 <a href="#" className="hover:text-white/80">
                   <span className="sr-only">Twitter</span>
                   <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27a8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27a8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07a4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                   </svg>
                 </a>
               </div>

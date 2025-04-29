@@ -5,9 +5,8 @@ import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from
 import { useRouter } from "next/navigation"
 import { supabase } from '@/lib/supabase-server'
 
-type UserRole = "pengunjung" | "dokter_hewan" | "penjaga_hewan" | "staf_admin" | "pelatih_hewan" | null
+type UserRole = "pengunjung" | "dokter_hewan" | "penjaga_hewan" | "staf_admin" | "pelatih_hewan" | "adopter" | null
 
-// Tambahkan interface untuk data user dari tabel pengguna
 interface UserProfile {
   username: string
   email: string

@@ -407,8 +407,6 @@ export default function ProfileSettings() {
               {/* Visitor-specific fields */}
               {userRole === "pengunjung" && (
                 <div className="space-y-4 border-t pt-4">
-                  <h2 className="font-semibold text-lg">[Untuk Pengunjung]</h2>
-
                   <div>
                     <Label htmlFor="alamat">Alamat Lengkap:</Label>
                     <Textarea id="alamat" name="alamat" value={formData.alamat} onChange={handleInputChange} required />
@@ -419,6 +417,7 @@ export default function ProfileSettings() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
+                          id="tgl_lahir"
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal",
@@ -429,12 +428,16 @@ export default function ProfileSettings() {
                           {formData.tgl_lahir ? format(formData.tgl_lahir, "PPP") : "Pilih tanggal"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
+                      <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
                           selected={formData.tgl_lahir || undefined}
                           onSelect={handleDateChange}
                           initialFocus
+                          captionLayout="dropdown-buttons"
+                          fromYear={1900}
+                          toYear={2025}
+                          className="rounded-md border shadow"
                         />
                       </PopoverContent>
                     </Popover>
@@ -445,8 +448,6 @@ export default function ProfileSettings() {
               {/* Veterinarian-specific fields */}
               {userRole === "dokter_hewan" && (
                 <div className="space-y-4 border-t pt-4">
-                  <h2 className="font-semibold text-lg">[Untuk Dokter Hewan]</h2>
-
                   <div>
                     <Label htmlFor="no_str">Nomor Sertifikasi Profesional: (tidak dapat diubah)</Label>
                     <Input id="no_str" name="no_str" value={formData.no_str} disabled className="bg-gray-100" />
@@ -516,10 +517,6 @@ export default function ProfileSettings() {
               {/* Staff-specific fields */}
               {["penjaga_hewan", "pelatih_hewan", "staf_admin"].includes(userRole) && (
                 <div className="space-y-4 border-t pt-4">
-                  <h2 className="font-semibold text-lg">
-                    [Untuk Penjaga Hewan, Staf Administrasi, Pelatih Pertunjukan]
-                  </h2>
-
                   <div>
                     <Label htmlFor="id_staf">ID Staf: (tidak dapat diubah)</Label>
                     <Input id="id_staf" name="id_staf" value={formData.id_staf} disabled className="bg-gray-100" />
