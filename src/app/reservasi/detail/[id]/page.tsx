@@ -80,7 +80,7 @@ export default function DetailReservasiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      if (!user) {
         router.push("/auth/login")
         return
       }

@@ -59,12 +59,12 @@ export default function DaftarAdopsiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      if (!user) {
         router.push("/auth/login")
         return
       }
 
-     /** if (userRole !== "staf_admin" && userRole !== "pengunjung") {
+     if (userRole !== "staf_admin" && userRole !== "pengunjung") {
         toast({
           title: "Akses Ditolak",
           description: "Anda tidak memiliki izin untuk mengakses halaman ini",
@@ -72,7 +72,7 @@ export default function DaftarAdopsiPage() {
         })
         router.push("/adopsi")
         return
-      }**/
+      }
 
       fetchData()
     }

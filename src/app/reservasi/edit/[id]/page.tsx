@@ -54,7 +54,7 @@ export default function EditReservasiPage() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      if (!user) {
         router.push("/auth/login")
         return
       }

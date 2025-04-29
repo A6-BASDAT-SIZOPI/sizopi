@@ -48,7 +48,7 @@ export default function CreateAtraksiPage() {
 
   useEffect(() => {
     // Hanya cek apakah user memiliki izin untuk mengelola
-    if (user && canManage) {
+    if (!user && !canManage) {
       alert("Anda tidak memiliki izin untuk mengakses halaman ini")
       router.push("/atraksi")
       return
