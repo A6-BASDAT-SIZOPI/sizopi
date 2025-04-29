@@ -90,6 +90,14 @@ export function Navbar() {
                     <Link href="/informasi-kebun" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Informasi Kebun Binatang
                     </Link>
+                  </>
+                )}
+
+                {userRole === "adopter" && (
+                  <>
+                    <Link href="/informasi-kebun" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Informasi Kebun Binatang
+                    </Link>
                     <Link href="/hewan-adopsi" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Hewan Adopsi
                     </Link>
