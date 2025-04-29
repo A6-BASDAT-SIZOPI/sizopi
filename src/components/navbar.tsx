@@ -39,7 +39,7 @@ export function Navbar() {
                     <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Data Satwa
                     </Link>
-                    <Link href="/jadwal-periksa" className="px-3 py-2 rounded-md hover:bg-green-600">
+                    <Link href="/jadwal-pemeriksaan" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Jadwal Periksa
                     </Link>
                   </>
@@ -53,7 +53,7 @@ export function Navbar() {
                     <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Data Habitat
                     </Link>
-                    <Link href="/pakan" className="px-3 py-2 rounded-md hover:bg-green-600">
+                    <Link href="/pemberian-pakan" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Pemberian Pakan
                     </Link>
                   </>
