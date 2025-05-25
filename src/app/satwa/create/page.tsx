@@ -57,19 +57,21 @@ const handleSubmit = async (e: React.FormEvent) => {
         tanggal_lahir: formData.tanggal_lahir || null,
     }
 
-    console.log("Data yang dikirim:", dataToSubmit) // Log data yang dikirim
+    console.log("Data yang dikirim:", dataToSubmit)
 
     try {
         const { data, error } = await supabase.from("hewan").insert([dataToSubmit])
+
         if (error) {
             console.error("Error adding data:", error)
-            alert(`Gagal menambahkan data: ${error.message || "Unknown error"}`)
+            alert(`Gagal menambahkan data: ${error.message}`)
             return
         }
         alert("Data berhasil ditambahkan!")
         router.push("/satwa")
-    } catch (error) {
-        console.error("Unexpected error:", error)
+    } catch (catchedError) { 
+        console.error("Unexpected error:", catchedError)
+        alert(`Terjadi kesalahan tidak terduga: ${catchedError instanceof Error ? catchedError.message : String(catchedError)}`)
     }
 }
 

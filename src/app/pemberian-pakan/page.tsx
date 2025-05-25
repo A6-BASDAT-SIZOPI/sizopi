@@ -256,10 +256,6 @@ export default function PemberianPakanPage() {
         </div>
       </main>
 
-      <footer className="bg-green-800 text-white p-4 text-center">
-        <p>&copy; {new Date().getFullYear()} SIZOPI - Sistem Informasi Zoo Pintar</p>
-      </footer>
-
       {/* Modals */}
       <AddFeedingModal
         isOpen={isAddModalOpen}
@@ -280,7 +276,7 @@ export default function PemberianPakanPage() {
               jenis_pakan: selectedFeeding.jenis,
               jumlah_pakan: selectedFeeding.jumlah,
               username_jh: selectedFeeding.username_jh || "",
-               status: selectedFeeding.status
+              status: selectedFeeding.status
             }}
             onSuccess={refreshFeedings}
           />
