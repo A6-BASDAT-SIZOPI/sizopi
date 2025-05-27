@@ -67,8 +67,8 @@ export function Navbar() {
                     <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Data Habitat
                     </Link>
-                    <Link href="/kelola-pengunjung" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Kelola Pengunjung
+                    <Link href="/reservasi/admin" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Kelola Reservasi
                     </Link>
                     <Link href="/kelola-adopsi" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Kelola Adopsi
@@ -87,17 +87,14 @@ export function Navbar() {
 
                 {userRole === "pengunjung" && (
                   <>
-                    <Link href="/informasi-kebun" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Informasi Kebun Binatang
+                    <Link href="/reservasi" className="px-3 py-2 rounded-md hover:bg-green-600">
+                      Reservasi Tiket
                     </Link>
                   </>
                 )}
 
                 {userRole === "adopter" && (
                   <>
-                    <Link href="/informasi-kebun" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Informasi Kebun Binatang
-                    </Link>
                     <Link href="/hewan-adopsi" className="px-3 py-2 rounded-md hover:bg-green-600">
                       Hewan Adopsi
                     </Link>
@@ -170,11 +167,11 @@ export function Navbar() {
                 {userRole === "staf_admin" && (
                   <>
                     <Link
-                      href="/kelola-pengunjung"
+                      href="/reservasi/admin"
                       className="block px-3 py-2 rounded-md hover:bg-green-600"
                       onClick={toggleMenu}
                     >
-                      Kelola Pengunjung
+                      Kelola Reservasi
                     </Link>
                     <Link
                       href="/kelola-adopsi"
@@ -206,11 +203,11 @@ export function Navbar() {
                 {userRole === "pengunjung" && (
                   <>
                     <Link
-                      href="/informasi-kebun"
+                      href="/reservasi"
                       className="block px-3 py-2 rounded-md hover:bg-green-600"
                       onClick={toggleMenu}
                     >
-                      Informasi Kebun Binatang
+                      Reservasi Tiket
                     </Link>
                     <Link
                       href="/hewan-adopsi"
