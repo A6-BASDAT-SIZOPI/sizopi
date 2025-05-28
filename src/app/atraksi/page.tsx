@@ -88,66 +88,14 @@ export default function DataAtraksi() {
       setIsLoading(true)
       setError(null)
 
-      console.log("Fetching fasilitas data...")
-      // Fetch fasilitas data
-      const { data: fasilitasData, error: fasilitasError } = await supabase.from("fasilitas").select("*")
-
-      if (fasilitasError) {
-        console.error("Error fetching fasilitas:", fasilitasError)
-        throw fasilitasError
-      }
-
-      console.log("Fasilitas data:", fasilitasData)
-
-      console.log("Fetching atraksi data...")
-      // Fetch atraksi data
-      const { data: atraksiData, error: atraksiError } = await supabase.from("atraksi").select("*")
-
-      if (atraksiError) {
-        console.error("Error fetching atraksi:", atraksiError)
-        throw atraksiError
-      }
-
-      console.log("Atraksi data:", atraksiData)
-
-      // Jika tidak ada data atraksi, tampilkan pesan kosong
-      if (!atraksiData || atraksiData.length === 0) {
-        setAtraksi([])
-        setIsLoading(false)
-        return
-      }
-
-      // Fetch pelatih data for mapping
-      console.log("Fetching pelatih data...")
-      const { data: pelatihData, error: pelatihError } = await supabase
-        .from("pelatih_hewan")
-        .select("username_lh, id_staf")
-
-      if (pelatihError) {
-        console.error("Error fetching pelatih:", pelatihError)
-        throw pelatihError
-      }
-
-      const pelatihMapping: Record<string, string> = {}
-      pelatihData?.forEach((p) => {
-        pelatihMapping[p.username_lh] = `${p.id_staf}`
-      })
-      setPelatihMap(pelatihMapping)
-
-      // Fetch hewan data for mapping
-      console.log("Fetching hewan data...")
-      const { data: hewanData, error: hewanError } = await supabase.from("hewan").select("id, nama")
-
-      if (hewanError) {
-        console.error("Error fetching hewan:", hewanError)
-        throw hewanError
-      }
-
-      const hewanMapping: Record<string, string> = {}
-      hewanData?.forEach((h) => {
-        hewanMapping[h.id] = h.nama
-      })
-      setHewanMap(hewanMapping)
+      // 1️⃣ Ambil semua data yang dibutuhkan
+      const [{ data: fasilitasData, error: eFas },
+             { data: atraksiData,   error: eAtr }] = await Promise.all([
+        supabase.from('fasilitas').select('*'),
+        supabase.from('atraksi').select('*'),
+      ])
+      if (eFas) throw eFas
+      if (eAtr) throw eAtr
 
       // Fetch jadwal penugasan data
       console.log("Fetching jadwal penugasan data...")
@@ -167,39 +115,66 @@ export default function DataAtraksi() {
         throw partisipasiError
       }
 
-      // Combine data
-      console.log("Combining data...")
-      const combinedData: Atraksi[] = []
+      // 3️⃣ Ambil pengguna untuk mapping nama
+      const { data: penggunaData, error: eUser } = await supabase
+        .from('pengguna')
+        .select('username, nama_depan, nama_belakang')
+      if (eUser) throw eUser
 
-      for (const fasilitas of fasilitasData || []) {
-        const atraksiInfo = atraksiData.find((a) => a.nama_atraksi === fasilitas.nama)
+      const penggunaMap: Record<string, string> = {}
+      penggunaData?.forEach(u => {
+        penggunaMap[u.username] = `${u.nama_depan} ${u.nama_belakang}`
+      })
 
-        if (atraksiInfo) {
-          // Find assigned trainer
-          const jadwalInfo = jadwalData
-            ?.filter((j) => j.nama_atraksi === fasilitas.nama)
-            .sort((a, b) => new Date(b.tgl_penugasan).getTime() - new Date(a.tgl_penugasan).getTime())[0]
+      // 4️⃣ Ambil hewan untuk mapping nama (optional, jika masih pakai)
+      const { data: hewanData, error: eHew } = await supabase
+        .from('hewan')
+        .select('id, nama')
+      if (eHew) throw eHew
 
-          // Find participating animals
-          const hewanTerlibat =
-            partisipasiData?.filter((p) => p.nama_fasilitas === fasilitas.nama).map((p) => p.id_hewan) || []
+      const hewanMap: Record<string, string> = {}
+      hewanData?.forEach(h => {
+        hewanMap[h.id] = h.nama
+      })
 
-          combinedData.push({
-            nama_atraksi: fasilitas.nama,
-            lokasi: atraksiInfo.lokasi,
-            kapasitas_max: fasilitas.kapasitas_max,
-            jadwal: fasilitas.jadwal,
-            pelatih: jadwalInfo?.username_lh || "-",
-            hewan_terlibat: hewanTerlibat,
-          })
-        }
+      // 5️⃣ Gabungkan menjadi array Atraksi[]
+      const combined: Atraksi[] = []
+
+      for (const fas of fasilitasData || []) {
+        const info = atraksiData!.find(a => a.nama_atraksi === fas.nama)
+        if (!info) continue
+
+        // jadwal terbaru untuk fasilitas ini
+        const jadwalInfo = jadwalData
+        ?.filter((j) => j.nama_atraksi === fas.nama)
+        .sort((a, b) => new Date(b.tgl_penugasan).getTime() - new Date(a.tgl_penugasan).getTime())[0]
+
+        // daftar hewan
+        const daftarHewan = (partisipasiData || [])
+          .filter(p => p.nama_fasilitas === fas.nama)
+          .map(p => hewanMap[p.id_hewan] || p.id_hewan)
+
+        // full name pelatih
+        const jadwalStr = jadwalInfo?.tgl_penugasan ?? ''
+        const usernamePelatih = jadwalInfo?.username_lh
+        const fullNamePelatih = usernamePelatih
+          ? (penggunaMap[usernamePelatih] || usernamePelatih)
+          : '-'
+
+        combined.push({
+          nama_atraksi:   fas.nama,
+          lokasi:         info.lokasi,
+          kapasitas_max:  fas.kapasitas_max,
+          jadwal:         jadwalStr,
+          pelatih:        fullNamePelatih,
+          hewan_terlibat: daftarHewan,
+        })
       }
 
-      console.log("Combined data:", combinedData)
-      setAtraksi(combinedData)
-    } catch (error: any) {
-      console.error("Error fetching data:", error)
-      setError(error.message || "Terjadi kesalahan saat mengambil data")
+      setAtraksi(combined)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Terjadi kesalahan saat mengambil data')
     } finally {
       setIsLoading(false)
     }
@@ -329,10 +304,10 @@ export default function DataAtraksi() {
                           Jadwal
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Pelatih
+                          Hewan yang Terlibat
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Hewan yang Terlibat
+                          Pelatih
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Aksi
@@ -346,8 +321,8 @@ export default function DataAtraksi() {
                           <td className="px-4 py-4 whitespace-nowrap">{item.lokasi}</td>
                           <td className="px-4 py-4 whitespace-nowrap">{item.kapasitas_max} orang</td>
                           <td className="px-4 py-4 whitespace-nowrap">{formatDateTime(item.jadwal)}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{pelatihMap[item.pelatih] || item.pelatih}</td>
                           <td className="px-4 py-4 whitespace-nowrap">{getHewanNames(item.hewan_terlibat)}</td>
+                          <td className="px-4 py-4 whitespace-nowrap">{item.pelatih}</td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
                               <button className="text-indigo-600 hover:text-indigo-900">

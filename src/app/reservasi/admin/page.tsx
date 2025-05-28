@@ -10,26 +10,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
-import { supabase } from "@/lib/supabase-server"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { XIcon, SearchIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-interface Reservasi {
-  id: string
+interface ReservasiAdmin {
   username_p: string
-  nama_atraksi: string
-  tanggal_reservasi: string
-  jam_reservasi: string
+  nama_fasilitas: string
+  tanggal_kunjungan: string
   jumlah_tiket: number
   status: string
-  created_at: string
-  updated_at: string
-  pengguna?: {
-    nama_depan: string
-    nama_belakang: string
-  }
+  jenis: "atraksi" | "wahana"
 }
 
 function Modal({
@@ -71,14 +63,15 @@ export default function AdminReservasiPage() {
   const { user, userRole, loading } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const [reservasi, setReservasi] = useState<Reservasi[]>([])
-  const [filteredReservasi, setFilteredReservasi] = useState<Reservasi[]>([])
+  const [reservasi, setReservasi] = useState<ReservasiAdmin[]>([])
+  const [filteredReservasi, setFilteredReservasi] = useState<ReservasiAdmin[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
-  const [reservasiToCancel, setReservasiToCancel] = useState<Reservasi | null>(null)
+  const [reservasiToCancel, setReservasiToCancel] = useState<ReservasiAdmin | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [jenisFilter, setJenisFilter] = useState<string>("all")
 
   useEffect(() => {
     if (!loading) {
@@ -93,7 +86,7 @@ export default function AdminReservasiPage() {
           description: "Anda tidak memiliki izin untuk mengakses halaman ini",
           variant: "destructive",
         })
-        router.push("/reservasi")
+        router.push("/")
         return
       }
 
@@ -103,29 +96,19 @@ export default function AdminReservasiPage() {
 
   useEffect(() => {
     filterReservasi()
-  }, [searchTerm, statusFilter, reservasi])
+  }, [searchTerm, statusFilter, jenisFilter, reservasi])
 
   const fetchReservasi = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Fetch all reservations with user details
-      const { data, error } = await supabase
-        .from("reservasi")
-        .select(`
-          *,
-          pengguna:username_p (
-            nama_depan,
-            nama_belakang
-          )
-        `)
-        .order("tanggal_reservasi", { ascending: true })
+      const response = await fetch("/api/reservasi/admin")
+      if (!response.ok) throw new Error("Gagal memuat data reservasi")
 
-      if (error) throw error
-
-      setReservasi(data || [])
-      setFilteredReservasi(data || [])
+      const data = await response.json()
+      setReservasi(data)
+      setFilteredReservasi(data)
     } catch (error: any) {
       console.error("Error fetching reservasi:", error)
       setError(error.message || "Terjadi kesalahan saat mengambil data reservasi")
@@ -142,9 +125,8 @@ export default function AdminReservasiPage() {
       const searchLower = searchTerm.toLowerCase()
       filtered = filtered.filter(
         (item) =>
-          item.nama_atraksi.toLowerCase().includes(searchLower) ||
-          item.username_p.toLowerCase().includes(searchLower) ||
-          (item.pengguna?.nama_depan + " " + item.pengguna?.nama_belakang).toLowerCase().includes(searchLower),
+          item.nama_fasilitas.toLowerCase().includes(searchLower) ||
+          item.username_p.toLowerCase().includes(searchLower),
       )
     }
 
@@ -153,10 +135,15 @@ export default function AdminReservasiPage() {
       filtered = filtered.filter((item) => item.status === statusFilter)
     }
 
+    // Apply jenis filter
+    if (jenisFilter !== "all") {
+      filtered = filtered.filter((item) => item.jenis === jenisFilter)
+    }
+
     setFilteredReservasi(filtered)
   }
 
-  const handleCancelClick = (reservasi: Reservasi) => {
+  const handleCancelClick = (reservasi: ReservasiAdmin) => {
     setReservasiToCancel(reservasi)
     setIsCancelModalOpen(true)
   }
@@ -165,9 +152,17 @@ export default function AdminReservasiPage() {
     if (!reservasiToCancel) return
 
     try {
-      const { error } = await supabase.from("reservasi").update({ status: "Dibatalkan" }).eq("id", reservasiToCancel.id)
+      const response = await fetch("/api/reservasi/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username_p: reservasiToCancel.username_p,
+          nama_fasilitas: reservasiToCancel.nama_fasilitas,
+          tanggal_kunjungan: reservasiToCancel.tanggal_kunjungan,
+        }),
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error("Gagal membatalkan reservasi")
 
       toast({
         title: "Sukses",
@@ -175,7 +170,15 @@ export default function AdminReservasiPage() {
       })
 
       // Update local state
-      setReservasi((prev) => prev.map((r) => (r.id === reservasiToCancel.id ? { ...r, status: "Dibatalkan" } : r)))
+      setReservasi((prev) =>
+        prev.map((r) =>
+          r.username_p === reservasiToCancel.username_p &&
+          r.nama_fasilitas === reservasiToCancel.nama_fasilitas &&
+          r.tanggal_kunjungan === reservasiToCancel.tanggal_kunjungan
+            ? { ...r, status: "Dibatalkan" }
+            : r,
+        ),
+      )
 
       setIsCancelModalOpen(false)
       setReservasiToCancel(null)
@@ -183,7 +186,7 @@ export default function AdminReservasiPage() {
       console.error("Error canceling reservasi:", error)
       toast({
         title: "Error",
-        description: "Gagal membatalkan reservasi: " + (error.message || JSON.stringify(error)),
+        description: "Gagal membatalkan reservasi: " + error.message,
         variant: "destructive",
       })
     }
@@ -216,6 +219,10 @@ export default function AdminReservasiPage() {
     }
   }
 
+  const getJenisClass = (jenis: string) => {
+    return jenis === "atraksi" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -225,20 +232,32 @@ export default function AdminReservasiPage() {
             <div className="h-2 bg-[#FF912F]" />
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Data Reservasi</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Kelola Reservasi</h1>
               </div>
 
               <div className="mb-6 flex flex-col md:flex-row gap-4">
                 <div className="relative flex-grow">
                   <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <Input
-                    placeholder="Cari berdasarkan nama atraksi atau username..."
+                    placeholder="Cari berdasarkan nama fasilitas atau username..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
                 </div>
-                <div className="w-full md:w-64">
+                <div className="w-full md:w-48">
+                  <Select value={jenisFilter} onValueChange={setJenisFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter Jenis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Jenis</SelectItem>
+                      <SelectItem value="atraksi">Atraksi</SelectItem>
+                      <SelectItem value="wahana">Wahana</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-full md:w-48">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Filter Status" />
@@ -270,79 +289,65 @@ export default function AdminReservasiPage() {
                   <p>Tidak ada data reservasi yang ditemukan.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Username Pengunjung
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Nama Atraksi
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Tanggal Reservasi
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Jumlah Tiket
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredReservasi.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{item.username_p}</div>
-                              {item.pengguna && (
-                                <div className="text-sm text-gray-500">
-                                  {item.pengguna.nama_depan} {item.pengguna.nama_belakang}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">{item.nama_atraksi}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{formatDate(item.tanggal_reservasi)}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{item.jumlah_tiket}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(
-                                item.status,
-                              )}`}
-                            >
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                asChild
-                                className="text-blue-600 border-blue-600 hover:bg-blue-50 h-8 px-2 py-1"
-                              >
-                                <Link href={`/reservasi/edit/${item.id}`}>Edit</Link>
-                              </Button>
-                              {item.status === "Terjadwal" && (
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleCancelClick(item)}
-                                  className="text-red-600 border-red-600 hover:bg-red-50 h-8 px-2 py-1"
-                                >
-                                  Batalkan
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredReservasi.map((item, index) => (
+                    <div
+                      key={`${item.username_p}-${item.nama_fasilitas}-${item.tanggal_kunjungan}`}
+                      className="bg-white border rounded-lg shadow-sm overflow-hidden"
+                    >
+                      <div className="p-4 border-b">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-lg font-semibold truncate">{item.nama_fasilitas}</h3>
+                          <span
+                            className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getJenisClass(item.jenis)}`}
+                          >
+                            {item.jenis.toUpperCase()}
+                          </span>
+                        </div>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(item.status)}`}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+
+                      <div className="p-4 space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-500">Username Pengunjung</p>
+                          <p className="font-medium">{item.username_p}</p>
+                        </div>
+
+                        <div>
+                          <p className="text-sm text-gray-500">Tanggal Reservasi</p>
+                          <p className="font-medium">{formatDate(item.tanggal_kunjungan)}</p>
+                        </div>
+
+                        <div>
+                          <p className="text-sm text-gray-500">Jumlah Tiket</p>
+                          <p className="font-medium">{item.jumlah_tiket}</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-gray-50 flex justify-between">
+                        <Button variant="outline" asChild className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                          <Link
+                            href={`/reservasi/admin/edit/${item.jenis}/${item.nama_fasilitas}?user=${item.username_p}&date=${item.tanggal_kunjungan}`}
+                          >
+                            Edit
+                          </Link>
+                        </Button>
+                        {item.status === "Terjadwal" && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleCancelClick(item)}
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                          >
+                            Batalkan
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

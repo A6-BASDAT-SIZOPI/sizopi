@@ -48,6 +48,16 @@ export default function CreateReservasiPage() {
         return
       }
 
+      if (userRole !== "pengunjung") {
+        toast({
+          title: "Akses Ditolak",
+          description: "Hanya pengunjung yang dapat membuat reservasi",
+          variant: "destructive",
+        })
+        router.push("/reservasi")
+        return
+      }
+
       fetchAtraksi()
     }
   }, [user, loading, userRole])
