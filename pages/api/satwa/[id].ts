@@ -88,7 +88,6 @@ export default async function handler(
             return res.status(404).json({ message: 'Hewan not found for deletion' })
         }
         res.status(200).json({ message: 'Hewan deleted successfully', id: result.rows[0].id })
-        // Alternatif: res.status(204).end() jika tidak ada body respons
         } catch (error) {
         console.error(`Error deleting hewan with id ${id}:`, error)
         res.status(500).json({ message: 'Error deleting hewan data', error: (error as Error).message })

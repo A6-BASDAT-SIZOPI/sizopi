@@ -1,8 +1,6 @@
-// pages/api/dashboard/index.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { pool } from '../../../lib/db'; // Ganti dengan '@/lib/db' jika path alias Anda sudah benar
+import { pool } from '../../../lib/db';
 
-// --- Definisikan tipe-tipe data yang mungkin dikembalikan ---
 interface PengunjungDashboardData {
     alamat?: string | null;
     tgl_lahir?: string | null;
@@ -39,7 +37,6 @@ interface AdopterDashboardData {
     total_kontribusi: number;
 }
 
-// Gabungkan semua tipe data dashboard, termasuk tipe untuk pesan error
 type DashboardDataResponse =
     | PengunjungDashboardData
     | DokterHewanDashboardData
@@ -47,7 +44,7 @@ type DashboardDataResponse =
     | StafAdminDashboardData
     | PelatihHewanDashboardData
     | AdopterDashboardData
-    | { message: string; error?: string }; // Untuk pesan sukses/error dari API
+    | { message: string; error?: string };
 
 export default async function handler(
     req: NextApiRequest,
@@ -150,29 +147,39 @@ export default async function handler(
                 break;
             }
             case "pelatih_hewan": {
-                const [pelatihResult, jadwalResult, hewanDilatihResult, latihanTerakhirResult] = await Promise.all([
+                const [pelatihResult, jadwalResult] = await Promise.all([
                     client.query("SELECT id_staf FROM pelatih_hewan WHERE username_lh = $1 LIMIT 1", [username]),
                     client.query(
                         "SELECT jp.nama_atraksi, TO_CHAR(jp.tgl_penugasan, 'YYYY-MM-DD HH24:MI') as tgl_penugasan_formatted FROM jadwal_penugasan jp WHERE jp.username_lh = $1 AND jp.tgl_penugasan >= CURRENT_DATE ORDER BY jp.tgl_penugasan ASC",
                         [username]
                     ),
-                    client.query(
-                        "SELECT h.nama FROM hewan h JOIN melatih m ON h.id = m.id_hewan WHERE m.username_lh = $1 GROUP BY h.nama ORDER BY h.nama",
-                        [username]
-                    ),
-                    client.query(
-                        "SELECT catatan_latihan FROM log_latihan WHERE username_lh = $1 ORDER BY tanggal_latihan DESC LIMIT 1",
-                        [username]
-                    )
                 ]);
+            
+                let daftarHewanDilatih: string[] = [];
+                if (jadwalResult.rows.length > 0) {
+                    const namaAtraksiPelatih: string[] = [...new Set(jadwalResult.rows.map((j: any) => j.nama_atraksi))];
+                    if (namaAtraksiPelatih.length > 0) {
+                        const placeholders = namaAtraksiPelatih.map((_, i) => `$${i + 1}`).join(',');
+                        const hewanDiAtraksiQuery = `
+                            SELECT DISTINCT h.nama 
+                            FROM hewan h
+                            JOIN berpartisipasi b ON h.id = b.id_hewan
+                            WHERE b.nama_fasilitas IN (${placeholders}) 
+                            ORDER BY h.nama;
+                        `;
+                        const hewanDiAtraksiResult = await client.query(hewanDiAtraksiQuery, namaAtraksiPelatih);
+                        daftarHewanDilatih = hewanDiAtraksiResult.rows.map((h: any) => h.nama) || [];
+                    }
+                }
+            
                 if (pelatihResult.rows.length === 0) {
                     console.warn(`API Dashboard: Data spesifik untuk pelatih hewan "${username}" tidak ditemukan di tabel 'pelatih_hewan'.`);
                 }
                 dataQueryResult = {
                     id_staf: pelatihResult.rows[0]?.id_staf,
                     jadwal_pertunjukan_mendatang: jadwalResult.rows.map((j: any) => `${j.nama_atraksi} (${j.tgl_penugasan_formatted})`) || [],
-                    daftar_hewan_dilatih: hewanDilatihResult.rows.map((h: any) => h.nama) || [],
-                    status_latihan_terakhir_summary: latihanTerakhirResult.rows[0]?.catatan_latihan || "Belum ada catatan latihan.",
+                    daftar_hewan_dilatih: daftarHewanDilatih.length > 0 ? daftarHewanDilatih : ["Tidak ada hewan yang berpartisipasi dalam jadwal atraksi mendatang"],
+                    status_latihan_terakhir_summary: "Informasi status latihan tidak tersedia.",
                 };
                 break;
             }
@@ -194,13 +201,8 @@ export default async function handler(
             default:
                 return res.status(400).json({ message: 'Peran pengguna tidak valid.' });
         }
-
-        // Jika setelah semua query, dataQueryResult masih kosong (misalnya untuk peran yang tidak memiliki data spesifik)
-        // atau jika query utama untuk peran tersebut tidak menghasilkan apa-apa
         if (Object.keys(dataQueryResult).length === 0 && userRole) {
             console.warn(`API Dashboard: DataQueryResult is empty for user "${username}" with role "${userRole}" after switch case execution.`);
-             // Anda bisa mengirimkan objek kosong atau pesan bahwa tidak ada data dashboard spesifik
-             // return res.status(200).json({ message: `Tidak ada data dashboard spesifik yang ditemukan untuk peran ${userRole}.` });
         }
 
         res.status(200).json(dataQueryResult as DashboardDataResponse);
@@ -208,8 +210,7 @@ export default async function handler(
         console.error('Error in dashboard API route:', error);
         const err = error as Error & { code?: string };
         let responseMessage = 'Terjadi kesalahan pada server.';
-        // Coba berikan pesan yang lebih spesifik jika errornya adalah kolom tidak ditemukan
-        if (err.message && err.code === '42703') { // 42703 adalah kode error PostgreSQL untuk undefined_column
+        if (err.message && err.code === '42703') {
             responseMessage = `Terjadi kesalahan pada server: Kolom database tidak ditemukan. Periksa query Anda. Detail: ${err.message}`;
         } else if (err.message) {
             responseMessage = err.message;
