@@ -120,29 +120,177 @@ export function Navbar() {
       {/* Mobile Menu */}
       {open && (
         <ul className="md:hidden bg-[#FF912F] px-4 pb-4 space-y-1">
-          {!user && (
+          {!user ? (
             <>
-              <li><Link href="/auth/login" className={NAV_LINK} onClick={() => setOpen(false)}>Login</Link></li>
-              <li><Link href="/auth/register" className={NAV_LINK} onClick={() => setOpen(false)}>Register</Link></li>
+              <li>
+                <Link href="/auth/login" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Login
+                </Link>
+              </li>
+              <li>
+                <Link href="/auth/register" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Register
+                </Link>
+              </li>
             </>
-          )}
-
-          {user && (
+          ) : (
             <>
-              <li><Link href="/dashboard" className={NAV_LINK} onClick={() => setOpen(false)}>Dashboard</Link></li>
-              {/* Ulangi menu sesuai role, misalnya: */}
-              {userRole === 'staf_admin' && (
+              <li>
+                <Link href="/dashboard" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Dashboard
+                </Link>
+              </li>
+
+              {userRole === 'dokter_hewan' && (
                 <>
-                  <li><Link href="/reservasi/admin" className={NAV_LINK} onClick={() => setOpen(false)}>Kelola Reservasi</Link></li>
-                  <li><Link href="/kelola-adopsi" className={NAV_LINK} onClick={() => setOpen(false)}>Kelola Adopsi</Link></li>
-                  <li><Link href="/kelola-adopter" className={NAV_LINK} onClick={() => setOpen(false)}>Kelola Adopter</Link></li>
+                  <li>
+                    <Link href="/rekam-medis" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Rekam Medis
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/satwa" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Satwa
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/jadwal-pemeriksaan" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Jadwal Periksa
+                    </Link>
+                  </li>
                 </>
               )}
-              <li><Link href="/profile" className={NAV_LINK} onClick={() => setOpen(false)}>Profil</Link></li>
+
+              {userRole === 'penjaga_hewan' && (
+                <>
+                  <li>
+                    <Link href="/satwa" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Satwa
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/habitat" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Habitat
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/pemberian-pakan" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Pemberian Pakan
+                    </Link>
+                  </li>
+                </>
+              )}
+
+              {userRole === 'staf_admin' && (
+                <>
+                  <li>
+                    <Link href="/satwa" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Satwa
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/habitat" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Habitat
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      className={`${NAV_LINK} flex items-center justify-between w-full`}
+                      onClick={(e) => {
+                        // untuk toggle submenu bila mau mobile dropdown
+                        const submenu = (e.currentTarget.nextElementSibling as HTMLElement)
+                        submenu.classList.toggle('hidden')
+                      }}
+                    >
+                      Kelola Fasilitas
+                      <ChevronDown className="ml-1 w-4 h-4" />
+                    </button>
+                    <ul className="hidden pl-4 space-y-1">
+                      <li>
+                        <Link href="/wahana" className={NAV_LINK} onClick={() => setOpen(false)}>
+                          Wahana
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/atraksi" className={NAV_LINK} onClick={() => setOpen(false)}>
+                          Atraksi
+                        </Link>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <Link href="/reservasi/admin" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Kelola Reservasi
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/kelola-adopsi" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Kelola Adopsi
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/kelola-adopter" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Kelola Adopter
+                    </Link>
+                  </li>
+                </>
+              )}
+
+              {userRole === 'pelatih_hewan' && (
+                <li>
+                  <Link href="/jadwal-pertunjukan" className={NAV_LINK} onClick={() => setOpen(false)}>
+                    Jadwal Pertunjukan
+                  </Link>
+                </li>
+              )}
+
+              {userRole === 'pengunjung' && (
+                <li>
+                  <button
+                    className={`${NAV_LINK} flex items-center justify-between w-full`}
+                    onClick={(e) => {
+                      const submenu = (e.currentTarget.nextElementSibling as HTMLElement)
+                      submenu.classList.toggle('hidden')
+                    }}
+                  >
+                    Reservasi
+                    <ChevronDown className="ml-1 w-4 h-4" />
+                  </button>
+                  <ul className="hidden pl-4 space-y-1">
+                    <li>
+                      <Link href="/reservasi/booking" className={NAV_LINK} onClick={() => setOpen(false)}>
+                        Booking Tiket
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/reservasi/tiket-anda" className={NAV_LINK} onClick={() => setOpen(false)}>
+                        Tiket Anda
+                      </Link>
+                    </li>
+                  </ul>
+                </li>
+              )}
+
+              {userRole === 'adopter' && (
+                <li>
+                  <Link href="/hewan-adopsi" className={NAV_LINK} onClick={() => setOpen(false)}>
+                    Hewan Adopsi
+                  </Link>
+                </li>
+              )}
+
+              <li>
+                <Link href="/profile" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Profil
+                </Link>
+              </li>
               <li>
                 <button
                   className={`${NAV_LINK} w-full text-left`}
-                  onClick={() => { signOut(); setOpen(false) }}
+                  onClick={() => {
+                    signOut()
+                    setOpen(false)
+                  }}
                 >
                   Logout
                 </button>

@@ -18,7 +18,7 @@ interface Reservasi {
   id: string
   username_p: string
   nama_atraksi: string
-  tanggal_reservasi: string
+  tanggal_kunjungan: string
   jam_reservasi: string
   jumlah_tiket: number
   status: string
@@ -95,7 +95,7 @@ export default function ReservasiPage() {
       }
 
       // Urutkan berdasarkan tanggal reservasi (yang akan datang dulu)
-      query = query.order("tanggal_reservasi", { ascending: true })
+      query = query.order("tanggal_kunjungan", { ascending: true })
 
       const { data, error } = await query
 
@@ -235,7 +235,7 @@ export default function ReservasiPage() {
                           <CalendarIcon className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
                           <div>
                             <p className="text-sm text-gray-500">Tanggal</p>
-                            <p className="font-medium">{formatDate(item.tanggal_reservasi)}</p>
+                            <p className="font-medium">{formatDate(item.tanggal_kunjungan)}</p>
                           </div>
                         </div>
                         <div className="flex items-start">
