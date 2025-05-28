@@ -1,250 +1,303 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useAuth } from "@/contexts/auth-context"
-import { Button } from "@/components/ui/button"
-import { LogOut, Menu, X } from "lucide-react"
-import { useState } from "react"
+import Link from 'next/link'
+import { useAuth } from '@/contexts/auth-context'
+import { Button } from '@/components/ui/button'
+import { LogOut, Menu, X, ChevronDown } from 'lucide-react'
+import { useState } from 'react'
+
+const NAV_LINK = 'px-3 py-2 rounded-md hover:bg-green-600 transition-colors whitespace-nowrap'
 
 export function Navbar() {
   const { user, userRole, signOut } = useAuth()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
+  const [open, setOpen] = useState(false)
 
   return (
-    <nav style={{ backgroundColor: '#FF912F' }} className="text-white shadow-md">      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <span className="font-bold text-xl">SIZOPI</span>
-            </Link>
-          </div>
+    <nav className="bg-[#FF912F] text-white shadow-md">
+      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4">
+        {/* Logo */}
+        <Link href="/" className="text-xl font-bold whitespace-nowrap">
+          SIZOPI
+        </Link>
 
-          {/* Desktop menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <>
-                <Link href="/dashboard" className="px-3 py-2 rounded-md hover:bg-green-600">
-                  Dashboard
-                </Link>
+        {/* Desktop Menu */}
+        <ul className="hidden md:flex items-center space-x-2 flex-nowrap">
+          {!user && (
+            <>
+              <li><Link href="/auth/login" className={NAV_LINK}>Login</Link></li>
+              <li><Link href="/auth/register" className={NAV_LINK}>Register</Link></li>
+            </>
+          )}
 
-                {userRole === "dokter_hewan" && (
-                  <>
-                    <Link href="/rekam-medis" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Rekam Medis
-                    </Link>
-                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Data Satwa
-                    </Link>
-                    <Link href="/jadwal-pemeriksaan" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Jadwal Periksa
-                    </Link>
-                  </>
+          {user && (
+            <>
+              <li><Link href="/dashboard" className={NAV_LINK}>Dashboard</Link></li>
+
+              {userRole === 'dokter_hewan' && (
+                <>
+                  <li><Link href="/rekam-medis" className={NAV_LINK}>Rekam Medis</Link></li>
+                  <li><Link href="/satwa" className={NAV_LINK}>Data Satwa</Link></li>
+                  <li><Link href="/jadwal-pemeriksaan" className={NAV_LINK}>Jadwal Periksa</Link></li>
+                </>
+              )}
+
+              {userRole === 'penjaga_hewan' && (
+                <>
+                  <li><Link href="/satwa" className={NAV_LINK}>Data Satwa</Link></li>
+                  <li><Link href="/habitat" className={NAV_LINK}>Data Habitat</Link></li>
+                  <li><Link href="/pemberian-pakan" className={NAV_LINK}>Pemberian Pakan</Link></li>
+                </>
+              )}
+
+              {userRole === 'staf_admin' && (
+                <>
+                  <li><Link href="/satwa" className={NAV_LINK}>Data Satwa</Link></li>
+                  <li><Link href="/habitat" className={NAV_LINK}>Data Habitat</Link></li>
+                  <li className="relative group">
+                    <button className={`${NAV_LINK} flex items-center`}>
+                      Kelola Fasilitas
+                      <X className="ml-1 w-4 h-4 rotate-45" strokeWidth={2} />
+                    </button>
+                    <ul className="absolute left-0 mt-2 w-40 bg-white text-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      <li><Link href="/wahana" className="block px-4 py-2 hover:bg-green-100">Wahana</Link></li>
+                      <li><Link href="/atraksi" className="block px-4 py-2 hover:bg-green-100">Atraksi</Link></li>
+                    </ul>
+                  </li>
+                  <li><Link href="/reservasi/admin" className={NAV_LINK}>Kelola Reservasi</Link></li>
+                  <li><Link href="/kelola-adopsi" className={NAV_LINK}>Kelola Adopsi</Link></li>
+                  <li><Link href="/kelola-adopter" className={NAV_LINK}>Kelola Adopter</Link></li>
+                </>
+              )}
+
+              {userRole === 'pelatih_hewan' && (
+                <li><Link href="/jadwal-pertunjukan" className={NAV_LINK}>Jadwal Pertunjukan</Link></li>
+              )}
+
+              {userRole === "pengunjung" && (
+                  <li className="relative group">
+                    <button className={`${NAV_LINK} flex items-center`}>
+                      Reservasi
+                      <ChevronDown className="ml-1 w-4 h-4" />
+                    </button>
+                    <ul className="absolute left-0 mt-2 w-48 bg-white text-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      <li>
+                        <Link href="/reservasi/booking" className="block px-4 py-2 hover:bg-orange-100">
+                          Booking Tiket
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/reservasi/tiket-anda" className="block px-4 py-2 hover:bg-orange-100">
+                          Tiket Anda
+                        </Link>
+                      </li>
+                    </ul>
+                  </li>
                 )}
+              {userRole === 'adopter' && (
+                <li><Link href="/hewan-adopsi" className={NAV_LINK}>Hewan Adopsi</Link></li>
+              )}
 
-                {userRole === "penjaga_hewan" && (
-                  <>
-                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Data Satwa
-                    </Link>
-                    <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Data Habitat
-                    </Link>
-                    <Link href="/pemberian-pakan" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Pemberian Pakan
-                    </Link>
-                  </>
-                )}
-
-                {userRole === "staf_admin" && (
-                  <>
-                    <Link href="/satwa" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Data Satwa
-                    </Link>
-                    <Link href="/habitat" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Data Habitat
-                    </Link>
-                    <Link href="/reservasi/admin" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Kelola Reservasi
-                    </Link>
-                    <Link href="/kelola-adopsi" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Kelola Adopsi
-                    </Link>
-                    <Link href="/kelola-adopter" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Kelola Adopter
-                    </Link>
-                  </>
-                )}
-
-                {userRole === "pelatih_hewan" && (
-                  <Link href="/jadwal-pertunjukan" className="px-3 py-2 rounded-md hover:bg-green-600">
-                    Jadwal Pertunjukan
-                  </Link>
-                )}
-
-                {userRole === "pengunjung" && (
-                  <>
-                    <Link href="/reservasi" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Reservasi Tiket
-                    </Link>
-                  </>
-                )}
-
-                {userRole === "adopter" && (
-                  <>
-                    <Link href="/hewan-adopsi" className="px-3 py-2 rounded-md hover:bg-green-600">
-                      Hewan Adopsi
-                    </Link>
-                  </>
-                )}
-
-                <Link href="/profile" className="px-3 py-2 rounded-md hover:bg-green-600">
-                  Profil
-                </Link>
-
-                <Button className="text-white hover:bg-green-600 hover:text-white" onClick={signOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
+              <li><Link href="/profile" className={NAV_LINK}>Profil</Link></li>
+              <li>
+                <Button variant="ghost" className="flex items-center px-3 py-2 hover:bg-green-600"  onClick={signOut}>
+                  <LogOut className="w-4 h-4 mr-1" />                  
                   Logout
                 </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/login" className="px-3 py-2 rounded-md hover:bg-green-600">
-                  Login
-                </Link>
-                <Link href="/auth/register" className="px-3 py-2 rounded-md hover:bg-green-600">
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
+              </li>
+            </>
+          )}
+        </ul>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-green-600 focus:outline-none"
-            >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-        </div>
+        {/* Mobile Toggle */}
+        <button
+          className="md:hidden p-2 rounded hover:bg-green-600"
+          onClick={() => setOpen(o => !o)}
+        >
+          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {user ? (
-              <>
-                <Link href="/dashboard" className="block px-3 py-2 rounded-md hover:bg-green-600" onClick={toggleMenu}>
+      {/* Mobile Menu */}
+      {open && (
+        <ul className="md:hidden bg-[#FF912F] px-4 pb-4 space-y-1">
+          {!user ? (
+            <>
+              <li>
+                <Link href="/auth/login" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Login
+                </Link>
+              </li>
+              <li>
+                <Link href="/auth/register" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Register
+                </Link>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <Link href="/dashboard" className={NAV_LINK} onClick={() => setOpen(false)}>
                   Dashboard
                 </Link>
+              </li>
 
-                {userRole === "dokter_hewan" && (
-                  <Link
-                    href="/rekam-medis"
-                    className="block px-3 py-2 rounded-md hover:bg-green-600"
-                    onClick={toggleMenu}
-                  >
-                    Rekam Medis Hewan
-                  </Link>
-                )}
+              {userRole === 'dokter_hewan' && (
+                <>
+                  <li>
+                    <Link href="/rekam-medis" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Rekam Medis
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/satwa" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Satwa
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/jadwal-pemeriksaan" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Jadwal Periksa
+                    </Link>
+                  </li>
+                </>
+              )}
 
-                {userRole === "penjaga_hewan" && (
-                  <Link
-                    href="/catatan-perawatan"
-                    className="block px-3 py-2 rounded-md hover:bg-green-600"
-                    onClick={toggleMenu}
-                  >
-                    Catatan Perawatan Hewan
-                  </Link>
-                )}
+              {userRole === 'penjaga_hewan' && (
+                <>
+                  <li>
+                    <Link href="/satwa" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Satwa
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/habitat" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Habitat
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/pemberian-pakan" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Pemberian Pakan
+                    </Link>
+                  </li>
+                </>
+              )}
 
-                {userRole === "staf_admin" && (
-                  <>
-                    <Link
-                      href="/reservasi/admin"
-                      className="block px-3 py-2 rounded-md hover:bg-green-600"
-                      onClick={toggleMenu}
+              {userRole === 'staf_admin' && (
+                <>
+                  <li>
+                    <Link href="/satwa" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Satwa
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/habitat" className={NAV_LINK} onClick={() => setOpen(false)}>
+                      Data Habitat
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      className={`${NAV_LINK} flex items-center justify-between w-full`}
+                      onClick={(e) => {
+                        // untuk toggle submenu bila mau mobile dropdown
+                        const submenu = (e.currentTarget.nextElementSibling as HTMLElement)
+                        submenu.classList.toggle('hidden')
+                      }}
                     >
+                      Kelola Fasilitas
+                      <ChevronDown className="ml-1 w-4 h-4" />
+                    </button>
+                    <ul className="hidden pl-4 space-y-1">
+                      <li>
+                        <Link href="/wahana" className={NAV_LINK} onClick={() => setOpen(false)}>
+                          Wahana
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/atraksi" className={NAV_LINK} onClick={() => setOpen(false)}>
+                          Atraksi
+                        </Link>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <Link href="/reservasi/admin" className={NAV_LINK} onClick={() => setOpen(false)}>
                       Kelola Reservasi
                     </Link>
-                    <Link
-                      href="/kelola-adopsi"
-                      className="block px-3 py-2 rounded-md hover:bg-green-600"
-                      onClick={toggleMenu}
-                    >
+                  </li>
+                  <li>
+                    <Link href="/kelola-adopsi" className={NAV_LINK} onClick={() => setOpen(false)}>
                       Kelola Adopsi
                     </Link>
-                    <Link
-                      href="/kelola-adopter"
-                      className="block px-3 py-2 rounded-md hover:bg-green-600"
-                      onClick={toggleMenu}
-                    >
+                  </li>
+                  <li>
+                    <Link href="/kelola-adopter" className={NAV_LINK} onClick={() => setOpen(false)}>
                       Kelola Adopter
                     </Link>
-                  </>
-                )}
+                  </li>
+                </>
+              )}
 
-                {userRole === "pelatih_hewan" && (
-                  <Link
-                    href="/jadwal-pertunjukan"
-                    className="block px-3 py-2 rounded-md hover:bg-green-600"
-                    onClick={toggleMenu}
-                  >
+              {userRole === 'pelatih_hewan' && (
+                <li>
+                  <Link href="/jadwal-pertunjukan" className={NAV_LINK} onClick={() => setOpen(false)}>
                     Jadwal Pertunjukan
                   </Link>
-                )}
+                </li>
+              )}
 
-                {userRole === "pengunjung" && (
-                  <>
-                    <Link
-                      href="/reservasi"
-                      className="block px-3 py-2 rounded-md hover:bg-green-600"
-                      onClick={toggleMenu}
-                    >
-                      Reservasi Tiket
-                    </Link>
-                    <Link
-                      href="/hewan-adopsi"
-                      className="block px-3 py-2 rounded-md hover:bg-green-600"
-                      onClick={toggleMenu}
-                    >
-                      Hewan Adopsi
-                    </Link>
-                  </>
-                )}
+              {userRole === 'pengunjung' && (
+                <li>
+                  <button
+                    className={`${NAV_LINK} flex items-center justify-between w-full`}
+                    onClick={(e) => {
+                      const submenu = (e.currentTarget.nextElementSibling as HTMLElement)
+                      submenu.classList.toggle('hidden')
+                    }}
+                  >
+                    Reservasi
+                    <ChevronDown className="ml-1 w-4 h-4" />
+                  </button>
+                  <ul className="hidden pl-4 space-y-1">
+                    <li>
+                      <Link href="/reservasi/booking" className={NAV_LINK} onClick={() => setOpen(false)}>
+                        Booking Tiket
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/reservasi/tiket-anda" className={NAV_LINK} onClick={() => setOpen(false)}>
+                        Tiket Anda
+                      </Link>
+                    </li>
+                  </ul>
+                </li>
+              )}
 
-                <Link href="/profile" className="block px-3 py-2 rounded-md hover:bg-green-600" onClick={toggleMenu}>
-                  Pengaturan Profil
+              {userRole === 'adopter' && (
+                <li>
+                  <Link href="/hewan-adopsi" className={NAV_LINK} onClick={() => setOpen(false)}>
+                    Hewan Adopsi
+                  </Link>
+                </li>
+              )}
+
+              <li>
+                <Link href="/profile" className={NAV_LINK} onClick={() => setOpen(false)}>
+                  Profil
                 </Link>
-
+              </li>
+              <li>
                 <button
+                  className={`${NAV_LINK} w-full text-left`}
                   onClick={() => {
                     signOut()
-                    toggleMenu()
+                    setOpen(false)
                   }}
-                  className="w-full text-left block px-3 py-2 rounded-md hover:bg-green-600"
                 >
                   Logout
                 </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="block px-3 py-2 rounded-md hover:bg-green-600" onClick={toggleMenu}>
-                  Login
-                </Link>
-                <Link href="/register" className="block px-3 py-2 rounded-md hover:bg-green-600" onClick={toggleMenu}>
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+              </li>
+            </>
+          )}
+        </ul>
       )}
     </nav>
   )
