@@ -86,6 +86,8 @@ export default function ReservasiPage() {
       setIsLoading(true)
       setError(null)
 
+      // Jika user adalah pengunjung, ambil hanya reservasi miliknya
+      // Jika user adalah admin, ambil semua reservasi
       let query = supabase.from("reservasi").select("*")
 
       if (userRole === "pengunjung") {
