@@ -1,94 +1,78 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { supabase } from '@/lib/supabase-server'
 
 type UserRole = "pengunjung" | "dokter_hewan" | "penjaga_hewan" | "staf_admin" | "pelatih_hewan" | "adopter" | null
 
 interface UserProfile {
   username: string
   email: string
-  nama_depan: string
-  nama_tengah?: string
-  nama_belakang: string
-  no_telepon: string
+  nama_lengkap: string
   role: UserRole
-  // tambahkan field lain jika perlu
 }
 
 interface AuthContextType {
   user: UserProfile | null
   loading: boolean
-  userRole: UserRole // <-- add this line
-  signIn: (email: string, password: string) => Promise<{ error: any | null }>
+  userRole: UserRole
+  signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
-  // Fetch user data from Supabase after login
+  // Check for existing session on mount
   useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true)
-      if (session?.user) {
-        // username = id (dari NextAuth handler)
-        const username = (session.user as any).id
-        const { data: userData, error } = await supabase
-          .from("pengguna")
-          .select("*")
-          .eq("username", username)
-          .single()
-        if (!error && userData) {
-          setUser({
-            username: userData.username,
-            email: userData.email,
-            nama_depan: userData.nama_depan,
-            nama_tengah: userData.nama_tengah,
-            nama_belakang: userData.nama_belakang,
-            no_telepon: userData.no_telepon,
-            role: (session.user as any).role as UserRole,
-          })
-        } else {
-          setUser(null)
-        }
-      } else {
-        setUser(null)
-      }
-      setLoading(false)
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
     }
-    fetchUserData()
-  }, [session])
+  }, [])
 
   const signIn = async (email: string, password: string) => {
-    const res = await nextAuthSignIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
-    if (res?.error) {
-      return { error: res.error }
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Login gagal')
+      }
+
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(data.user))
+      setUser(data.user)
+      router.push('/')
+    } catch (error: any) {
+      throw error // Re-throw error agar bisa ditangkap di komponen
+    } finally {
+      setLoading(false)
     }
-    router.push("/")
-    return { error: null }
   }
 
   const signOut = async () => {
-    await nextAuthSignOut({ redirect: false })
-    router.push("/auth/login")
+    localStorage.removeItem('user')
+    setUser(null)
+    router.push('/auth/login')
   }
 
   const value = {
     user,
-    userRole: user?.role || null,    
-    loading: status === "loading" || loading,
+    userRole: user?.role || null,
+    loading,
     signIn,
     signOut,
   }
@@ -96,10 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }

@@ -59,9 +59,9 @@ export default function Home() {
     if (!user) return "Selamat Datang di SIZOPI"
 
     if (userRole === "pengunjung") {
-      return `Selamat Berkunjung, ${user.nama_depan}`
+      return `Selamat Berkunjung, ${user.nama_lengkap}`
     }
-    return `Selamat Datang, ${user.nama_depan}`
+    return `Selamat Datang, ${user.nama_lengkap}`
   }
 
   const getRoleMessage = () => {
@@ -103,8 +103,8 @@ export default function Home() {
           ) : (
             <>
               <p className="text-xl sm:text-2xl text-white mb-8 max-w-3xl mx-auto drop-shadow-lg">
-            Sistem Informasi Zoo Pintar - Mengelola kebun binatang dengan lebih efisien
-          </p>
+                Sistem Informasi Zoo Pintar - Mengelola kebun binatang dengan lebih efisien
+              </p>
 
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button
@@ -189,7 +189,7 @@ export default function Home() {
                   className="w-full border-[#FF912F] text-[#FF912F] hover:bg-[#FF912F] hover:text-white"
                 >
                   <Link href="#">Pelajari Lebih Lanjut</Link>
-            </Button>
+                </Button>
               </div>
             </div>
 
@@ -219,7 +219,7 @@ export default function Home() {
                   className="w-full border-[#FF912F] text-[#FF912F] hover:bg-[#FF912F] hover:text-white"
                 >
                   <Link href="#">Pelajari Lebih Lanjut</Link>
-            </Button>
+                </Button>
               </div>
             </div>
           </div>

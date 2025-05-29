@@ -8,11 +8,10 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Search, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { supabase } from "@/lib/supabase-client"
 import { format } from "date-fns"
-import { id } from "date-fns/locale"
 import { AddMedicalRecordModal } from "@/components/medical-records/add-medical-record-modal"
 import { EditMedicalRecordModal } from "@/components/medical-records/edit-medical-record-modal"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface MedicalRecord {
   id_hewan: string
@@ -37,62 +36,23 @@ export default function RekamMedisPage() {
   const [selectedAnimalId, setSelectedAnimalId] = useState("")
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const fetchMedicalRecords = async () => {
-      if (!user) return
+    if (!user) return
 
-      try {
-      // 1. Ambil semua catatan medis
-      const { data: medis, error: errorMedis } = await supabase
-        .from("catatan_medis")
-        .select(`
-          *,
-          hewan (
-            nama
-          )
-        `)
-        .order("tanggal_pemeriksaan", { ascending: false })
-
-      if (errorMedis) {
-        console.error("Error fetching catatan_medis:", errorMedis)
-        return
-      }
-
-      // 2. Ambil semua pengguna dokter yang diperlukan
-      const usernames = [...new Set(medis.map(r => r.username_dh))]
-      const { data: pengguna, error: errorPengguna } = await supabase
-        .from("pengguna")
-        .select("username, nama_depan, nama_tengah, nama_belakang")
-        .in("username", usernames)
-
-      if (errorPengguna) {
-        console.error("Error fetching pengguna:", errorPengguna)
-        return
-      }
-
-      // 3. Mapping username ke nama lengkap
-      const usernameToNama = Object.fromEntries(
-        pengguna.map(u => [
-          u.username,
-          `Dr. ${u.nama_depan} ${u.nama_tengah ? u.nama_tengah + " " : ""}${u.nama_belakang}`
-        ])
-      )
-
-      // 4. Mapping data akhir
-      const formattedRecords = medis.map((record) => ({
-        ...record,
-        nama_hewan: record.hewan?.nama || `Hewan ID: ${record.id_hewan}`,
-        nama_dokter: usernameToNama[record.username_dh] || record.username_dh,
-      }))
-
-      setMedicalRecords(formattedRecords)
-      setFilteredRecords(formattedRecords)
-      } catch (error) {
-      console.error("Error fetching medical records:", error)
-      } finally {
-        setIsLoading(false)
-      }
+    try {
+      const res = await fetch('/api/rekam-medis')
+      if (!res.ok) throw new Error('Gagal mengambil data rekam medis')
+      const data = await res.json()
+      setMedicalRecords(data)
+      setFilteredRecords(data)
+    } catch (error) {
+      console.error('Error fetching medical records:', error)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
   useEffect(() => {
     fetchMedicalRecords()
@@ -112,24 +72,14 @@ export default function RekamMedisPage() {
     }
   }, [searchTerm, medicalRecords])
 
-  function formatDoctorName(doctor: any) {
-    if (!doctor) return "Unknown Doctor"
-    return `Dr. ${doctor.nama_depan} ${doctor.nama_tengah ? doctor.nama_tengah + " " : ""}${doctor.nama_belakang}`
-  }
-
   const handleDelete = async (animalId: string, date: string) => {
     if (confirm("Yakin ingin menghapus rekam medis ini?")) {
       try {
-        const { error } = await supabase
-          .from("catatan_medis")
-          .delete()
-          .eq("id_hewan", animalId)
-          .eq("tanggal_pemeriksaan", date)
+        const res = await fetch(`/api/rekam-medis/${animalId}/${date}`, {
+          method: 'DELETE'
+        })
 
-        if (error) {
-          console.error("Error deleting medical record:", error)
-          return
-        }
+        if (!res.ok) throw new Error('Gagal menghapus rekam medis')
 
         setMedicalRecords((prev) =>
           prev.filter((record) => !(record.id_hewan === animalId && record.tanggal_pemeriksaan === date)),
@@ -138,7 +88,7 @@ export default function RekamMedisPage() {
           prev.filter((record) => !(record.id_hewan === animalId && record.tanggal_pemeriksaan === date)),
         )
       } catch (error) {
-        console.error("Error deleting medical record:", error)
+        console.error('Error deleting medical record:', error)
       }
     }
   }
@@ -155,8 +105,7 @@ export default function RekamMedisPage() {
   }
 
   const handleAddRecord = () => {
-    // Bisa pakai modal atau redirect ke halaman tambah
-    router.push("/rekam-medis/tambah")
+    setShowAddModal(true)
   }
 
   if (loading || isLoading) {
@@ -184,39 +133,40 @@ export default function RekamMedisPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-4">Rekam Medis</h1>
+          <div className="flex justify-between items-center mb-4">
+            <div className="relative w-96">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Cari berdasarkan nama hewan, dokter, atau diagnosa..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleAddRecord} className="bg-green-600 hover:bg-green-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Tambah Rekam Medis
+            </Button>
+          </div>
 
-      <main className="flex-grow p-6 bg-gradient-to-b from-green-50 to-green-100">
-        <div className="max-w-6xl mx-auto">
+          {successMessage && (
+            <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          )}
+
           <Card>
             <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-center px-4 py-1">REKAM MEDIS</h1>
-                <Button 
-                  onClick={() => setShowAddModal(true)} 
-                  className="flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
-                >
-                  <Plus className="mr-2 h-5 w-5" /> Tambah Rekam Medis
-                </Button>
-              </div>
-
-              <div className="mb-6">
-                <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input
-              type="text"
-                    placeholder="Cari berdasarkan nama hewan, dokter, atau diagnosa..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-                  </div>
-
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-800">
                   <thead>
                     <tr>
                       <th className="border border-gray-800 p-3 text-left">Tanggal Pemeriksaan</th>
+                      <th className="border border-gray-800 p-3 text-left">Nama Hewan</th>
                       <th className="border border-gray-800 p-3 text-left">Nama Dokter</th>
                       <th className="border border-gray-800 p-3 text-left">Status Kesehatan</th>
                       <th className="border border-gray-800 p-3 text-left">Diagnosa</th>
@@ -232,13 +182,14 @@ export default function RekamMedisPage() {
                           <td className="border border-gray-800 p-3">
                             {format(new Date(record.tanggal_pemeriksaan), "yyyy-MM-dd")}
                           </td>
+                          <td className="border border-gray-800 p-3">{record.nama_hewan}</td>
                           <td className="border border-gray-800 p-3">{record.nama_dokter}</td>
                           <td className="border border-gray-800 p-3">
-                      <span
+                            <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status_kesehatan)}`}
                             >
                               {record.status_kesehatan}
-                      </span>
+                            </span>
                           </td>
                           <td className="border border-gray-800 p-3">
                             {record.status_kesehatan?.toLowerCase() === "sakit" ? record.diagnosis || "-" : "-"}
@@ -247,7 +198,7 @@ export default function RekamMedisPage() {
                             {record.status_kesehatan?.toLowerCase() === "sakit" ? record.pengobatan || "-" : "-"}
                           </td>
                           <td className="border border-gray-800 p-3">{record.catatan_tindak_lanjut || "-"}</td>
-                          <td className="border border-gray-800 p-3 space-x-2 flex">
+                          <td className="border border-gray-800 p-3">
                             <Button
                               variant="outline"
                               size="sm"
@@ -266,13 +217,13 @@ export default function RekamMedisPage() {
                               onClick={() => handleDelete(record.id_hewan, record.tanggal_pemeriksaan)}
                             >
                               Hapus
-                      </Button>
+                            </Button>
                           </td>
                         </tr>
-              ))
-            ) : (
+                      ))
+                    ) : (
                       <tr>
-                        <td colSpan={7} className="border border-gray-800 p-3 text-center">
+                        <td colSpan={8} className="border border-gray-800 p-3 text-center">
                           Tidak ada rekam medis yang ditemukan
                         </td>
                       </tr>
@@ -292,10 +243,13 @@ export default function RekamMedisPage() {
       <AddMedicalRecordModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        animalId={selectedAnimalId}
-        onSuccess={() => {
+        onSuccess={(message) => {
           fetchMedicalRecords()
           setShowAddModal(false)
+          if (message) {
+            setSuccessMessage(message)
+            setTimeout(() => setSuccessMessage(null), 5000)
+          }
         }}
       />
 

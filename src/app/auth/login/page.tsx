@@ -36,9 +36,8 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-      router.replace("/")
     } catch (err: any) {
-      setError(err.message || "An error occurred during login")
+      setError(err.message || "Terjadi kesalahan saat login")
     } finally {
       setIsLoading(false)
     }

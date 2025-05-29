@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { deleteMedicalRecord } from "@/app/actions/medical-record-actions"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
@@ -23,13 +22,8 @@ interface MedicalRecord {
   pengobatan: string | null
   status_kesehatan: string
   catatan_tindak_lanjut: string | null
-  DOKTER_HEWAN: {
-    PENGGUNA: {
-      nama_depan: string
-      nama_tengah: string | null
-      nama_belakang: string
-    }
-  }
+  nama_hewan: string
+  nama_dokter: string
 }
 
 interface DeleteMedicalRecordModalProps {
@@ -48,16 +42,21 @@ export function DeleteMedicalRecordModal({ isOpen, onClose, record, onSuccess }:
     setIsLoading(true)
 
     try {
-      const result = await deleteMedicalRecord(record.id_hewan, record.tanggal_pemeriksaan)
+      const encodedTanggal = encodeURIComponent(record.tanggal_pemeriksaan);
+      const url = `/api/rekam-medis/${record.id_hewan}/${encodedTanggal}`;
+      const res = await fetch(url, {
+        method: 'DELETE'
+      });
 
-      if (result.success) {
-        onSuccess()
-        onClose()
-      } else {
-        setError(result.error || "Terjadi kesalahan saat menghapus rekam medis")
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.message || 'Gagal menghapus rekam medis')
       }
+
+      onSuccess()
+      onClose()
     } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan saat menghapus rekam medis")
+      setError(err.message || 'Terjadi kesalahan saat menghapus rekam medis')
     } finally {
       setIsLoading(false)
     }

@@ -8,25 +8,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { getAllAnimals } from "../actions/medical-record-actions"
-import { supabase } from "@/lib/supabase-client"
 
 interface Animal {
-  id: string
-  nama: string
-  spesies: string
-  asal_hewan: string
-  tanggal_lahir: string | null
-  status_kesehatan: string
-  nama_habitat: string | null
-  url_foto: string
-  frekuensi_pemeriksaan?: number
-}
-
-interface Schedule {
   id_hewan: string
-  tgl_pemeriksaan_selanjutnya: string
-  freq_pemeriksaan_rutin: number
+  nama_hewan: string
+  spesies: string
+  status_kesehatan: string
+  tanggal_pemeriksaan: string
+  frekuensi_pemeriksaan_rutin: number
 }
 
 export default function JadwalPemeriksaanPage() {
@@ -36,18 +25,21 @@ export default function JadwalPemeriksaanPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     const fetchAnimals = async () => {
       if (!user) return
 
       try {
-        const result = await getAllAnimals()
-        if (result.success && result.data) {
-          setAnimals(result.data)
-          setFilteredAnimals(result.data)
+        console.log("Fetching animals...")
+        const response = await fetch('/api/jadwal-pemeriksaan')
+        if (!response.ok) {
+          throw new Error('Failed to fetch schedules')
         }
+        const data = await response.json()
+        console.log("Received data:", data)
+        setAnimals(data)
+        setFilteredAnimals(data)
       } catch (error) {
         console.error("Error fetching animals:", error)
       } finally {
@@ -59,12 +51,14 @@ export default function JadwalPemeriksaanPage() {
   }, [user])
 
   useEffect(() => {
+    console.log("Current animals:", animals)
+    console.log("Current filtered animals:", filteredAnimals)
     if (searchTerm.trim() === "") {
       setFilteredAnimals(animals)
     } else {
       const filtered = animals.filter(
         (animal) =>
-          animal.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          animal.nama_hewan?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           animal.spesies.toLowerCase().includes(searchTerm.toLowerCase()),
       )
       setFilteredAnimals(filtered)
@@ -104,6 +98,8 @@ export default function JadwalPemeriksaanPage() {
     )
   }
 
+  console.log("Rendering with filtered animals:", filteredAnimals)
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -136,15 +132,16 @@ export default function JadwalPemeriksaanPage() {
                       <th className="border border-gray-300 p-3 text-left">Nama Hewan</th>
                       <th className="border border-gray-300 p-3 text-left">Spesies</th>
                       <th className="border border-gray-300 p-3 text-left">Status Kesehatan</th>
+                      <th className="border border-gray-300 p-3 text-left">Tanggal Pemeriksaan</th>
                       <th className="border border-gray-300 p-3 text-left">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAnimals.length > 0 ? (
+                    {filteredAnimals && filteredAnimals.length > 0 ? (
                       filteredAnimals.map((animal) => (
-                        <tr key={animal.id} className="hover:bg-gray-50">
+                        <tr key={animal.id_hewan} className="hover:bg-gray-50">
                           <td className="border border-gray-300 p-3">
-                            {animal.nama ? animal.nama : `${animal.spesies} (Tanpa Nama)`}
+                            {animal.nama_hewan ? animal.nama_hewan : `${animal.spesies} (Tanpa Nama)`}
                           </td>
                           <td className="border border-gray-300 p-3">{animal.spesies}</td>
                           <td className="border border-gray-300 p-3">
@@ -157,11 +154,18 @@ export default function JadwalPemeriksaanPage() {
                             </span>
                           </td>
                           <td className="border border-gray-300 p-3">
+                            {new Date(animal.tanggal_pemeriksaan).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </td>
+                          <td className="border border-gray-300 p-3">
                             <Button
                               variant="outline"
                               size="sm"
                               className="bg-blue-100 text-blue-800 hover:bg-blue-200"
-                              onClick={() => router.push(`/jadwal-pemeriksaan/${animal.id}`)}
+                              onClick={() => router.push(`/jadwal-pemeriksaan/${animal.id_hewan}`)}
                             >
                               Lihat Jadwal
                             </Button>
@@ -170,7 +174,7 @@ export default function JadwalPemeriksaanPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="border border-gray-300 p-3 text-center">
+                        <td colSpan={5} className="border border-gray-300 p-3 text-center">
                           Tidak ada hewan yang ditemukan
                         </td>
                       </tr>
@@ -182,13 +186,6 @@ export default function JadwalPemeriksaanPage() {
           </Card>
         </div>
       </main>
-
-      {/* <AddHealthScheduleModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        animalId={filteredAnimals[0]?.id || ""}
-        onSuccess={() => {}}
-      /> */}
 
       <footer className="bg-green-800 text-white p-4 text-center">
         <p>&copy; {new Date().getFullYear()} SIZOPI - Sistem Informasi Zoo Pintar</p>

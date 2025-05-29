@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { editMedicalRecord } from "@/app/actions/medical-record-actions"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
@@ -27,6 +25,7 @@ interface MedicalRecord {
   pengobatan: string | null
   status_kesehatan: string
   catatan_tindak_lanjut: string | null
+  nama_hewan: string
   nama_dokter: string
 }
 
@@ -38,18 +37,14 @@ interface EditMedicalRecordModalProps {
 }
 
 export function EditMedicalRecordModal({ isOpen, onClose, record, onSuccess }: EditMedicalRecordModalProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     diagnosis: record.diagnosis || "",
     pengobatan: record.pengobatan || "",
+    status_kesehatan: record.status_kesehatan,
     catatan_tindak_lanjut: record.catatan_tindak_lanjut || "",
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,36 +52,36 @@ export function EditMedicalRecordModal({ isOpen, onClose, record, onSuccess }: E
     setIsLoading(true)
 
     try {
-      const result = await editMedicalRecord({
-        id_hewan: record.id_hewan,
-        tanggal_pemeriksaan: record.tanggal_pemeriksaan,
-        diagnosis: formData.diagnosis,
-        pengobatan: formData.pengobatan,
-        catatan_tindak_lanjut: formData.catatan_tindak_lanjut,
+      const res = await fetch(`/api/rekam-medis/${record.id_hewan}/${record.tanggal_pemeriksaan}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       })
 
-      if (result.success) {
-        onSuccess()
-        onClose()
-      } else {
-        setError(result.error || "Terjadi kesalahan saat mengedit rekam medis")
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.message || 'Gagal mengupdate rekam medis')
       }
+
+      onSuccess()
+      onClose()
     } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan saat mengedit rekam medis")
+      setError(err.message || 'Terjadi kesalahan saat mengupdate rekam medis')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const formatDoctorName = () => record.nama_dokter || record.username_dh
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Rekam Medis</DialogTitle>
           <DialogDescription>
-            Edit rekam medis tanggal {format(new Date(record.tanggal_pemeriksaan), "dd MMMM yyyy", { locale: id })}
+            Edit rekam medis untuk {record.nama_hewan} pada tanggal{" "}
+            {format(new Date(record.tanggal_pemeriksaan), "dd MMMM yyyy", { locale: id })}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,43 +91,47 @@ export function EditMedicalRecordModal({ isOpen, onClose, record, onSuccess }: E
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Tanggal Pemeriksaan</Label>
-            <p className="text-sm text-gray-700">
-              {format(new Date(record.tanggal_pemeriksaan), "dd MMMM yyyy", { locale: id })}
-            </p>
-          </div>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="diagnosis">Diagnosis</Label>
+              <Textarea
+                id="diagnosis"
+                value={formData.diagnosis}
+                onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+                placeholder="Masukkan diagnosis"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>Nama Dokter</Label>
-            <p className="text-sm text-gray-700">{formatDoctorName()}</p>
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="pengobatan">Pengobatan</Label>
+              <Textarea
+                id="pengobatan"
+                value={formData.pengobatan}
+                onChange={(e) => setFormData({ ...formData, pengobatan: e.target.value })}
+                placeholder="Masukkan pengobatan"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>Status Kesehatan</Label>
-            <p className="text-sm text-gray-700">{record.status_kesehatan}</p>
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="status_kesehatan">Status Kesehatan</Label>
+              <Input
+                id="status_kesehatan"
+                value={formData.status_kesehatan}
+                onChange={(e) => setFormData({ ...formData, status_kesehatan: e.target.value })}
+                placeholder="Masukkan status kesehatan"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="diagnosis">Diagnosa Baru</Label>
-            <Textarea id="diagnosis" name="diagnosis" value={formData.diagnosis} onChange={handleChange} required />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="pengobatan">Pengobatan Baru</Label>
-            <Textarea id="pengobatan" name="pengobatan" value={formData.pengobatan} onChange={handleChange} required />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="catatan_tindak_lanjut">Catatan Tindak Lanjut</Label>
-            <Textarea
-              id="catatan_tindak_lanjut"
-              name="catatan_tindak_lanjut"
-              value={formData.catatan_tindak_lanjut}
-              onChange={handleChange}
-              placeholder="Opsional"
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="catatan_tindak_lanjut">Catatan Tindak Lanjut</Label>
+              <Textarea
+                id="catatan_tindak_lanjut"
+                value={formData.catatan_tindak_lanjut}
+                onChange={(e) => setFormData({ ...formData, catatan_tindak_lanjut: e.target.value })}
+                placeholder="Masukkan catatan tindak lanjut"
+              />
+            </div>
           </div>
 
           <DialogFooter>

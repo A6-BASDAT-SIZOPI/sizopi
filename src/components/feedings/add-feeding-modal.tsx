@@ -21,13 +21,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 interface AddFeedingModalProps {
   isOpen: boolean
   onClose: () => void
-  animalId: string
+  animals: {id: string, nama: string}[]
   onSuccess: () => void
 }
 
-export function AddFeedingModal({ isOpen, onClose, animalId, onSuccess }: AddFeedingModalProps) {
+export function AddFeedingModal({ isOpen, onClose, animals, onSuccess }: AddFeedingModalProps) {
   const { user } = useAuth()
   const [formData, setFormData] = useState({
+    id_hewan: "",
     jenis_pakan: "",
     jumlah_pakan: "",
     jadwal: new Date().toISOString().slice(0, 16), // Format: YYYY-MM-DDTHH:MM
@@ -35,7 +36,7 @@ export function AddFeedingModal({ isOpen, onClose, animalId, onSuccess }: AddFee
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -52,6 +53,12 @@ export function AddFeedingModal({ isOpen, onClose, animalId, onSuccess }: AddFee
       }
 
       // Validate form
+      if (!formData.id_hewan) {
+        setError("Pilih hewan terlebih dahulu")
+        setIsLoading(false)
+        return
+      }
+
       if (!formData.jenis_pakan.trim()) {
         setError("Jenis pakan harus diisi")
         setIsLoading(false)
@@ -67,12 +74,17 @@ export function AddFeedingModal({ isOpen, onClose, animalId, onSuccess }: AddFee
 
       const username = user.email.split("@")[0] // Assuming username is the part before @ in email
 
+      // Convert date format from DD/MM/YYYY HH:mm to YYYY-MM-DD HH:mm:ss
+      const [datePart, timePart] = formData.jadwal.split(" ")
+      const [day, month, year] = datePart.split("/")
+      const formattedDate = `${year}-${month}-${day} ${timePart}:00`
+
       const result = await addFeedingSchedule({
-        id_hewan: animalId,
+        id_hewan: formData.id_hewan,
         username_jh: username,
         jenis_pakan: formData.jenis_pakan,
         jumlah_pakan: jumlahPakan,
-        jadwal: formData.jadwal,
+        jadwal: formattedDate,
       })
 
       if (result.success) {
@@ -80,6 +92,7 @@ export function AddFeedingModal({ isOpen, onClose, animalId, onSuccess }: AddFee
         onClose()
         // Reset form
         setFormData({
+          id_hewan: "",
           jenis_pakan: "",
           jumlah_pakan: "",
           jadwal: new Date().toISOString().slice(0, 16),
@@ -109,6 +122,25 @@ export function AddFeedingModal({ isOpen, onClose, animalId, onSuccess }: AddFee
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="id_hewan">Pilih Hewan</Label>
+            <select
+              id="id_hewan"
+              name="id_hewan"
+              value={formData.id_hewan}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-md"
+              required
+            >
+              <option value="">Pilih hewan...</option>
+              {animals.map((animal) => (
+                <option key={animal.id} value={animal.id}>
+                  {animal.nama}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="jenis_pakan">Jenis Pakan</Label>
             <Input

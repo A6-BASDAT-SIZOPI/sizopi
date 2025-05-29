@@ -1,14 +1,12 @@
 "use client"
 
-import { useEffect, useState, use } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { Navbar } from "@/components/navbar"
 import { Card, CardContent } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Plus } from "lucide-react"
-import { getAnimalById } from "../../actions/medical-record-actions"
-import { getAnimalExaminationFrequency, getExaminationSchedules } from "../../actions/schedule-actions"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { AddScheduleModal } from "@/components/schedules/add-schedule-modal"
@@ -16,27 +14,18 @@ import { UpdateFrequencyModal } from "@/components/schedules/update-frequency-mo
 import Link from "next/link"
 
 interface Animal {
-  id: string
-  nama: string
-  spesies: string
-  asal_hewan: string
-  tanggal_lahir: string | null
-  status_kesehatan: string
-  nama_habitat: string | null
-  url_foto: string
-}
-
-interface ExaminationSchedule {
   id_hewan: string
-  tgl_pemeriksaan_selanjutnya: string
-  freq_pemeriksaan_rutin?: number
+  nama_hewan: string
+  spesies: string
+  status_kesehatan: string
+  tanggal_pemeriksaan: string
+  frekuensi_pemeriksaan_rutin: number
 }
 
-export default function AnimalSchedulePage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params)
+export default function AnimalSchedulePage({ params }: { params: { id: string } }) {
   const { user, userRole, loading } = useAuth()
   const [animal, setAnimal] = useState<Animal | null>(null)
-  const [schedules, setSchedules] = useState<ExaminationSchedule[]>([])
+  const [schedules, setSchedules] = useState<Animal[]>([])
   const [frequency, setFrequency] = useState<number>(3) // Default to 3 months
   const [isLoading, setIsLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -48,28 +37,20 @@ export default function AnimalSchedulePage({ params }: { params: Promise<{ id: s
       if (!user) return
 
       try {
-        // Fetch animal details
-        const animalResult = await getAnimalById(resolvedParams.id)
-        if (animalResult.success && animalResult.data) {
-          setAnimal(animalResult.data)
+        // Fetch animal details and schedules
+        const res = await fetch(`/api/jadwal-pemeriksaan/${params.id}`)
+        if (!res.ok) {
+          throw new Error('Failed to fetch animal data')
+        }
+        const data = await res.json()
+        
+        if (data.length > 0) {
+          setAnimal(data[0])
+          setSchedules(data)
+          setFrequency(data[0].frekuensi_pemeriksaan_rutin || 3)
         } else {
-          console.error("Error fetching animal:", animalResult.error)
           router.push("/jadwal-pemeriksaan")
           return
-        }
-
-        // Fetch examination frequency
-        const frequencyResult = await getAnimalExaminationFrequency(resolvedParams.id)
-        if (frequencyResult.success) {
-          setFrequency(frequencyResult.data)
-        }
-
-        // Fetch examination schedules
-        const schedulesResult = await getExaminationSchedules(resolvedParams.id)
-        if (schedulesResult.success && schedulesResult.data) {
-          setSchedules(schedulesResult.data)
-        } else {
-          console.error("Error fetching schedules:", schedulesResult.error)
         }
       } catch (error) {
         console.error("Error fetching data:", error)
@@ -79,7 +60,7 @@ export default function AnimalSchedulePage({ params }: { params: Promise<{ id: s
     }
 
     fetchData()
-  }, [user, resolvedParams.id, router])
+  }, [user, params.id, router])
 
   const handleAddSchedule = () => {
     setIsAddModalOpen(true)
@@ -91,14 +72,14 @@ export default function AnimalSchedulePage({ params }: { params: Promise<{ id: s
 
   const refreshSchedules = async () => {
     try {
-      const schedulesResult = await getExaminationSchedules(resolvedParams.id)
-      if (schedulesResult.success && schedulesResult.data) {
-        setSchedules(schedulesResult.data)
+      const res = await fetch(`/api/jadwal-pemeriksaan/${params.id}`)
+      if (!res.ok) {
+        throw new Error('Failed to refresh schedules')
       }
-
-      const frequencyResult = await getAnimalExaminationFrequency(resolvedParams.id)
-      if (frequencyResult.success) {
-        setFrequency(frequencyResult.data)
+      const data = await res.json()
+      setSchedules(data)
+      if (data.length > 0) {
+        setFrequency(data[0].frekuensi_pemeriksaan_rutin || 3)
       }
     } catch (error) {
       console.error("Error refreshing data:", error)
@@ -151,7 +132,7 @@ export default function AnimalSchedulePage({ params }: { params: Promise<{ id: s
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold">Jadwal Pemeriksaan: {animal.nama ? animal.nama : animal.spesies}</h1>
+                <h1 className="text-2xl font-bold">Jadwal Pemeriksaan: {animal.nama_hewan ? animal.nama_hewan : animal.spesies}</h1>
               </div>
 
               <div className="flex justify-between items-center mb-6">
@@ -168,15 +149,15 @@ export default function AnimalSchedulePage({ params }: { params: Promise<{ id: s
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr>
-                      <th className="border border-gray-300 p-3 text-left">Tanggal Pemeriksaan Selanjutnya</th>
+                      <th className="border border-gray-300 p-3 text-left">Tanggal Pemeriksaan</th>
                     </tr>
                   </thead>
                   <tbody>
                     {schedules.length > 0 ? (
                       schedules.map((schedule) => (
-                        <tr key={schedule.tgl_pemeriksaan_selanjutnya} className="hover:bg-gray-50">
+                        <tr key={schedule.tanggal_pemeriksaan} className="hover:bg-gray-50">
                           <td className="border border-gray-300 p-3">
-                            {format(new Date(schedule.tgl_pemeriksaan_selanjutnya), "dd MMMM yyyy", { locale: id })}
+                            {format(new Date(schedule.tanggal_pemeriksaan), "dd MMMM yyyy", { locale: id })}
                           </td>
                         </tr>
                       ))
@@ -284,14 +265,14 @@ export default function AnimalSchedulePage({ params }: { params: Promise<{ id: s
       <AddScheduleModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        animalId={animal.id}
+        animalId={animal.id_hewan}
         onSuccess={refreshSchedules}
       />
 
       <UpdateFrequencyModal
         isOpen={isFrequencyModalOpen}
         onClose={() => setIsFrequencyModalOpen(false)}
-        animalId={animal.id}
+        animalId={animal.id_hewan}
         currentFrequency={frequency}
         onSuccess={refreshSchedules}
       />

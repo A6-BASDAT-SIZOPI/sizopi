@@ -39,10 +39,8 @@ export async function getFeedingSchedules(animalId: string) {
 
 export async function getKeeperFeedingHistory(username: string) {
   try {
-    
-    // 1. Dapatkan semua id_hewan yang pernah diberi pakan oleh penjaga ini
     const { data: memberiData, error: memberiError } = await supabase
-      .from("memberi")
+      .from("MEMBERI")
       .select("id_hewan")
       .eq("username_jh", username)
       .order("id_hewan");
@@ -52,18 +50,15 @@ export async function getKeeperFeedingHistory(username: string) {
       throw memberiError;
     }
     
-    // Ekstrak unique id_hewan saja
     const animalIds = [...new Set(memberiData.map(item => item.id_hewan))];
     
     if (animalIds.length === 0) {
       return { success: true, data: [] };
     }
     
-    // 2. Dapatkan semua data pakan untuk hewan-hewan tersebut
     const result = [];
     
     for (const animalId of animalIds) {
-      // Dapatkan data pakan
       const { data: pakanData, error: pakanError } = await supabase
         .from("pakan")
         .select("*")
@@ -74,9 +69,8 @@ export async function getKeeperFeedingHistory(username: string) {
         continue;
       }
       
-      // Dapatkan data hewan
       const { data: hewanData, error: hewanError } = await supabase
-        .from("hewan")
+        .from("HEWAN")
         .select("*")
         .eq("id", animalId)
         .single();
@@ -86,7 +80,6 @@ export async function getKeeperFeedingHistory(username: string) {
         continue;
       }
       
-      // Tambahkan setiap data pakan ke hasil
       for (const pakan of pakanData) {
         result.push({
           id: result.length + 1,
@@ -109,33 +102,105 @@ export async function getKeeperFeedingHistory(username: string) {
 }
 
 export async function addFeedingSchedule(formData: FeedingFormData) {
-
   try {
-    const { error } = await supabase.from("pemberian_pakan").insert({
-      id_hewan: formData.id_hewan,
-      username_jh: formData.username_jh,
-      jenis_pakan: formData.jenis_pakan,
-      jumlah_pakan: formData.jumlah_pakan,
-      jadwal: formData.jadwal,
-      status: "Menunggu Pemberian"
-    })
-
-    if (error) {
-      return { success: false, error: error.message }
+    // Validate input
+    if (!formData.id_hewan || !formData.username_jh || !formData.jenis_pakan || !formData.jadwal) {
+      return { success: false, error: "Semua field harus diisi" }
     }
 
-    revalidatePath(`/pemberian-pakan/${formData.id_hewan}`)
+    if (formData.jumlah_pakan <= 0) {
+      return { success: false, error: "Jumlah pakan harus lebih dari 0" }
+    }
+
+    // Format the date properly
+    console.log("Received jadwal:", formData.jadwal)
+    
+    // Handle date format
+    let formattedDate
+    try {
+      // Extract only the valid date and time parts
+      const dateTimeMatch = formData.jadwal.match(/(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
+      if (!dateTimeMatch) {
+        console.error("Could not extract valid date and time")
+        return { success: false, error: "Format tanggal tidak valid" }
+      }
+
+      const [, datePart, timePart] = dateTimeMatch
+      formattedDate = `${datePart}T${timePart}:00`
+      
+      console.log("Formatted date:", formattedDate)
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return { success: false, error: "Format tanggal tidak valid" }
+    }
+
+    // Check if feeding schedule already exists for this animal and time
+    const { data: existingSchedule, error: checkError } = await supabase
+      .from("pakan")
+      .select("*")
+      .eq("id_hewan", formData.id_hewan)
+      .eq("jadwal", formattedDate)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error("Error checking existing schedule:", checkError)
+      return { success: false, error: "Gagal memeriksa jadwal yang sudah ada" }
+    }
+
+    if (existingSchedule) {
+      return { success: false, error: "Jadwal pemberian pakan untuk waktu ini sudah ada" }
+    }
+
+    // Insert new feeding schedule into pakan table
+    const { data: pakanData, error: insertError } = await supabase
+      .from("pakan")
+      .insert({
+        id_hewan: formData.id_hewan,
+        jenis: formData.jenis_pakan,
+        jumlah: formData.jumlah_pakan,
+        jadwal: formattedDate,
+        status: "Menunggu Pemberian"
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error("Error inserting feeding schedule:", insertError)
+      return { success: false, error: insertError.message }
+    }
+
+    // Insert into memberi table to record which keeper is responsible
+    const { error: memberiError } = await supabase
+      .from("memberi")
+      .insert({
+        id_hewan: formData.id_hewan,
+        username_jh: formData.username_jh,
+        jadwal: formattedDate
+      })
+
+    if (memberiError) {
+      console.error("Error recording keeper assignment:", memberiError)
+      // If this fails, we should probably delete the pakan entry
+      await supabase
+        .from("pakan")
+        .delete()
+        .eq("id_hewan", formData.id_hewan)
+        .eq("jadwal", formattedDate)
+      return { success: false, error: "Gagal mencatat penjaga yang bertugas" }
+    }
+
+    revalidatePath("/pemberian-pakan")
     return { success: true }
   } catch (error: any) {
+    console.error("Error in addFeedingSchedule:", error)
     return { success: false, error: error.message }
   }
 }
 
 export async function editFeedingSchedule(formData: EditFeedingFormData) {
-
   try {
     const { error } = await supabase
-      .from("pemberian_pakan")
+      .from("pakan")
       .update({
         jenis_pakan: formData.jenis_pakan,
         jumlah_pakan: formData.jumlah_pakan,
@@ -155,10 +220,9 @@ export async function editFeedingSchedule(formData: EditFeedingFormData) {
 }
 
 export async function deleteFeedingSchedule(id: number) {
-
   try {
     const { error } = await supabase
-      .from("pemberian_pakan")
+      .from("pakan")
       .delete()
       .eq("id", id)
 
@@ -193,10 +257,9 @@ export async function markFeedingAsComplete(id_hewan: string, jadwal: string) {
 }
 
 export async function getAllAnimals() {
-
   try {
     const { data, error } = await supabase
-      .from("hewan")
+      .from("HEWAN")
       .select("*")
       .order("nama", { ascending: true })
 
@@ -211,10 +274,9 @@ export async function getAllAnimals() {
 }
 
 export async function getAnimalById(animalId: string) {
-
   try {
     const { data, error } = await supabase
-      .from("hewan")
+      .from("HEWAN")
       .select("*")
       .eq("id", animalId)
       .single()

@@ -38,6 +38,7 @@ export default function PemberianPakanPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedFeeding, setSelectedFeeding] = useState<FeedingSchedule | null>(null)
+  const [animals, setAnimals] = useState<{id: string, nama: string}[]>([])
 
   useEffect(() => {
     const fetchFeedings = async () => {
@@ -70,6 +71,21 @@ export default function PemberianPakanPage() {
       setFilteredFeedings(filtered)
     }
   }, [searchTerm, feedings])
+
+  useEffect(() => {
+    const fetchAnimals = async () => {
+      try {
+        const res = await fetch('/api/hewan')
+        if (!res.ok) throw new Error('Gagal mengambil data hewan')
+        const data = await res.json()
+        setAnimals(data)
+      } catch (error) {
+        console.error('Error fetching animals:', error)
+      }
+    }
+
+    fetchAnimals()
+  }, [])
 
   const handleAddFeeding = () => {
     setIsAddModalOpen(true)
@@ -260,7 +276,7 @@ export default function PemberianPakanPage() {
       <AddFeedingModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        animalId={selectedFeeding?.id_hewan || ""}
+        animals={animals}
         onSuccess={refreshFeedings}
       />
 
