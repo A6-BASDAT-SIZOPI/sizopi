@@ -36,7 +36,7 @@ function DetailModal({ isOpen, onClose, reservasi, onEdit, onCancel }: DetailMod
   const formatTime = (timeStr: string) => {
     try {
       const date = new Date(timeStr)
-      return format(date, "HH:mm", { locale: id })
+      return format(date, "HH:mm")
     } catch (error) {
       return timeStr
     }
@@ -45,7 +45,7 @@ function DetailModal({ isOpen, onClose, reservasi, onEdit, onCancel }: DetailMod
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr)
-      return format(date, "dd MMMM yyyy", { locale: id })
+      return format(date, "dd MMMM yyyy")
     } catch (error) {
       return dateStr
     }
@@ -255,9 +255,8 @@ export default function TiketAndaPage() {
     setIsDetailModalOpen(true)
   }
 
-  const handleEdit = (reservasi: ReservasiTiket) => {
-    setIsDetailModalOpen(false)
-    router.push(`/reservasi/edit/${reservasi.jenis}/${reservasi.nama_fasilitas}?date=${reservasi.tanggal_kunjungan}`)
+  const handleEdit = (r: ReservasiTiket) => {
+    router.push(`/reservasi/edit/${r.username_p}/${r.nama_fasilitas}`)
   }
 
   const handleCancelClick = (reservasi: ReservasiTiket) => {
@@ -270,15 +269,16 @@ export default function TiketAndaPage() {
     if (!reservasiToCancel) return
 
     try {
-      const response = await fetch("/api/reservasi/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username_p: reservasiToCancel.username_p,
-          nama_fasilitas: reservasiToCancel.nama_fasilitas,
-          tanggal_kunjungan: reservasiToCancel.tanggal_kunjungan,
-        }),
-      })
+        const response = await fetch("/api/reservasi/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username_p: reservasiToCancel.username_p,
+              nama_fasilitas: reservasiToCancel.nama_fasilitas,
+              // remove tanggal_kunjungan
+            }),
+          })
+          
 
       if (!response.ok) throw new Error("Gagal membatalkan reservasi")
 

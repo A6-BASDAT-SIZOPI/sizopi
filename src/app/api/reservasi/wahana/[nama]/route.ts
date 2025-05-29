@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/db"
 
-export async function GET(request: NextRequest, { params }: { params: { nama: string } }) {
+export async function GET(  
+    request: NextRequest,
+    context: { params: { nama: string } }) {
   try {
-    const namaWahana = decodeURIComponent(params.nama)
+    const { nama } = await context.params;
+    const namaWahana = decodeURIComponent(nama)
 
     const result = await query(
       `

@@ -9,7 +9,7 @@ export async function GET() {
         r.nama_fasilitas,
         r.tanggal_kunjungan,
         r.jumlah_tiket,
-        'Terjadwal' as status,
+        r.status as status,
         CASE 
           WHEN a.nama_atraksi IS NOT NULL THEN 'atraksi'
           WHEN w.nama_wahana IS NOT NULL THEN 'wahana'

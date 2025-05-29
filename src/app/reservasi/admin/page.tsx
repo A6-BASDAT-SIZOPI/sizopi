@@ -15,13 +15,17 @@ import { id } from "date-fns/locale"
 import { XIcon, SearchIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+
 interface ReservasiAdmin {
   username_p: string
   nama_fasilitas: string
   tanggal_kunjungan: string
   jumlah_tiket: number
-  status: string
   jenis: "atraksi" | "wahana"
+  jadwal: string
+  lokasi?: string
+  peraturan?: string
+  status: string
 }
 
 function Modal({
@@ -223,6 +227,10 @@ export default function AdminReservasiPage() {
     return jenis === "atraksi" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
   }
 
+  const handleEdit = (r: ReservasiAdmin) => {
+    router.push(`/reservasi/edit/${r.username_p}/${r.nama_fasilitas}`)
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -329,23 +337,26 @@ export default function AdminReservasiPage() {
                       </div>
 
                       <div className="p-4 bg-gray-50 flex justify-between">
-                        <Button variant="outline" asChild className="text-blue-600 border-blue-600 hover:bg-blue-50">
-                          <Link
-                            href={`/reservasi/admin/edit/${item.jenis}/${item.nama_fasilitas}?user=${item.username_p}&date=${item.tanggal_kunjungan}`}
-                          >
-                            Edit
-                          </Link>
-                        </Button>
-                        {item.status === "Terjadwal" && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleCancelClick(item)}
-                            className="text-red-600 border-red-600 hover:bg-red-50"
-                          >
-                            Batalkan
-                          </Button>
-                        )}
-                      </div>
+                          {item.status !== "Dibatalkan" && (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleEdit(item)}
+                              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {item.status === "Terjadwal" && (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleCancelClick(item)}
+                              className="text-red-600 border-red-600 hover:bg-red-50"
+                            >
+                              Batalkan
+                            </Button>
+                          )}
+                        </div>
+
                     </div>
                   ))}
                 </div>
