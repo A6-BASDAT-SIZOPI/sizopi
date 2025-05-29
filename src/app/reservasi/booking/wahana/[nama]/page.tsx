@@ -154,12 +154,14 @@ export default function BookingWahanaPage() {
       const payload = await response.json()
   
       if (!response.ok) {
-        // show the trigger’s error message in an alert
-        alert(`Gagal membuat reservasi:\n${payload.message}`)
+        toast({
+          title: "Error",
+          description: payload.message,
+          variant: "destructive",
+        })
         return
       }
   
-      // success
       toast({
         title: "Sukses",
         description: "Reservasi berhasil dibuat",
@@ -167,7 +169,11 @@ export default function BookingWahanaPage() {
       router.push("/reservasi/tiket-anda")
     } catch (err: any) {
       console.error("Unexpected error creating reservation:", err)
-      alert("Terjadi kesalahan:\n" + (err.message || String(err)))
+      toast({
+        title: "Error",
+        description: err.message || "Terjadi kesalahan saat membuat reservasi",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
