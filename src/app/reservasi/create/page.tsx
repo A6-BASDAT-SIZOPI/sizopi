@@ -166,75 +166,43 @@ export default function CreateReservasiPage() {
     return Object.keys(newErrors).length === 0
   }
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
-
+    if (!validateForm()) return
+  
     setIsSubmitting(true)
-
+  
     try {
-      // Cek apakah masih ada kapasitas tersedia
-      if (selectedAtraksi) {
-        // Ambil total tiket yang sudah dipesan untuk atraksi dan tanggal yang sama
-        const tanggalStr = format(formData.tanggal_reservasi, "yyyy-MM-dd")
-        const { data: existingReservations, error: reservationError } = await supabase
-          .from("reservasi")
-          .select("jumlah_tiket")
-          .eq("nama_atraksi", formData.nama_atraksi)
-          .eq("tanggal_reservasi", tanggalStr)
-          .eq("status", "Terjadwal")
-
-        if (reservationError) throw reservationError
-
-        const totalReserved = existingReservations.reduce((sum, res) => sum + res.jumlah_tiket, 0)
-        const remainingCapacity = selectedAtraksi.kapasitas_max - totalReserved
-
-        if (formData.jumlah_tiket > remainingCapacity) {
-          toast({
-            title: "Kapasitas Tidak Cukup",
-            description: `Hanya tersisa ${remainingCapacity} tiket untuk atraksi ini pada tanggal tersebut`,
-            variant: "destructive",
-          })
-          setIsSubmitting(false)
-          return
-        }
+      const tanggalStr = format(formData.tanggal_reservasi, "yyyy-MM-dd")
+      const response = await fetch("/api/reservasi/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username_p: user.username,
+          nama_fasilitas: formData.nama_atraksi,
+          tanggal_kunjungan: tanggalStr,
+          jumlah_tiket: formData.jumlah_tiket,
+        }),
+      })
+  
+      const payload = await response.json()
+  
+      if (!response.ok) {
+        alert(`Gagal membuat reservasi:\n${payload.message}`)
+        return
       }
-
-      // Extract time from the atraksi jadwal
-      const jadwalTime = selectedAtraksi ? new Date(selectedAtraksi.jadwal).toTimeString().slice(0, 8) : "00:00:00"
-
-      // Insert reservasi
-      const { error: insertError } = await supabase.from("reservasi").insert({
-        username_p: user.username,
-        nama_atraksi: formData.nama_atraksi,
-        tanggal_reservasi: format(formData.tanggal_reservasi, "yyyy-MM-dd"),
-        jam_reservasi: jadwalTime,
-        jumlah_tiket: formData.jumlah_tiket,
-        status: "Terjadwal",
-      })
-
-      if (insertError) throw insertError
-
-      toast({
-        title: "Sukses",
-        description: "Reservasi berhasil dibuat",
-      })
-
+  
+      alert("Reservasi berhasil dibuat!")
       router.push("/reservasi")
-    } catch (error) {
-      console.error("Error creating reservation:", error)
-      toast({
-        title: "Error",
-        description: "Gagal membuat reservasi: " + (error.message || JSON.stringify(error)),
-        variant: "destructive",
-      })
+    } catch (err: any) {
+      console.error("Unexpected error:", err)
+      alert("Terjadi kesalahan:\n" + (err.message ?? err))
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }  
+
 
   const formatTime = (timeStr: string) => {
     try {

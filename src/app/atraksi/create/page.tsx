@@ -1,23 +1,15 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { useAuth } from "@/contexts/auth-context"
-import { supabase } from "@/lib/supabase-server" // Gunakan instance supabase yang sudah ada
 
 interface Pelatih {
   username_lh: string
   id_staf: string
   nama_lengkap?: string
-}
-
-interface Pengguna {
-  username: string
-  nama_depan: string
-  nama_belakang: string
 }
 
 interface Hewan {
@@ -62,56 +54,23 @@ export default function CreateAtraksiPage() {
       setIsLoading(true)
 
       // Fetch pelatih data
-      const { data: pelatihData, error: pelatihError } = await supabase
-        .from("pelatih_hewan")
-        .select("username_lh, id_staf")
-
-      if (pelatihError) {
-        console.error("Error fetching pelatih:", pelatihError)
-        throw pelatihError
+      const response = await fetch('/api/pelatih')
+      if (!response.ok) {
+        throw new Error('Gagal mengambil data pelatih')
       }
-
-      // Fetch pengguna data untuk semua pelatih
-      const usernames = pelatihData.map((p) => p.username_lh)
-      const { data: penggunaData, error: penggunaError } = await supabase
-        .from("pengguna")
-        .select("username, nama_depan, nama_belakang")
-        .in("username", usernames)
-
-      if (penggunaError) {
-        console.error("Error fetching pengguna:", penggunaError)
-        throw penggunaError
-      }
-
-      // Buat mapping username ke data pengguna
-      const penggunaMap: Record<string, Pengguna> = {}
-      penggunaData.forEach((p) => {
-        penggunaMap[p.username] = p
-      })
-
-      // Gabungkan data pelatih dengan data pengguna
-      const transformedPelatihData = pelatihData.map((pelatih) => {
-        const pengguna = penggunaMap[pelatih.username_lh]
-        return {
-          username_lh: pelatih.username_lh,
-          id_staf: pelatih.id_staf,
-          nama_lengkap: pengguna
-            ? `${pengguna.nama_depan || ""} ${pengguna.nama_belakang || ""}`.trim()
-            : pelatih.username_lh,
-        }
-      })
-
-      console.log("Pelatih data:", transformedPelatihData)
-      setPelatihList(transformedPelatihData || [])
+      const pelatihData = await response.json()
+      setPelatihList(pelatihData)
 
       // Fetch hewan data
-      const { data: hewanData, error: hewanError } = await supabase.from("hewan").select("id, nama, spesies")
-
-      if (hewanError) throw hewanError
-      setHewanList(hewanData || [])
+      const hewanResponse = await fetch('/api/hewan')
+      if (!hewanResponse.ok) {
+        throw new Error('Gagal mengambil data hewan')
+      }
+      const hewanData = await hewanResponse.json()
+      setHewanList(hewanData)
     } catch (error) {
       console.error("Error fetching data:", error)
-      alert("Gagal memuat data: " + (error.message || JSON.stringify(error)))
+      alert("Gagal memuat data")
     } finally {
       setIsLoading(false)
     }
@@ -165,58 +124,16 @@ export default function CreateAtraksiPage() {
     if (!validate()) return
 
     try {
-      // Combine date and time
-      const jadwalDateTime = new Date(`${formData.jadwal_tanggal}T${formData.jadwal_waktu}:00`)
-
-      // First insert into fasilitas table
-      const { error: fasilitasError } = await supabase.from("fasilitas").insert({
-        nama: formData.nama_atraksi,
-        jadwal: jadwalDateTime.toISOString(),
-        kapasitas_max: formData.kapasitas_max,
+      const response = await fetch('/api/atraksi/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       })
 
-      if (fasilitasError) throw fasilitasError
-
-      // Insert into atraksi table
-      const { error: atraksiError } = await supabase.from("atraksi").insert({
-        nama_atraksi: formData.nama_atraksi,
-        lokasi: formData.lokasi,
-      })
-
-      if (atraksiError) {
-        // Rollback fasilitas insert
-        await supabase.from("fasilitas").delete().eq("nama", formData.nama_atraksi)
-        throw atraksiError
-      }
-
-      // Insert into jadwal_penugasan table
-      const { error: jadwalError } = await supabase.from("jadwal_penugasan").insert({
-        username_lh: formData.pelatih,
-        tgl_penugasan: new Date().toISOString(),
-        nama_atraksi: formData.nama_atraksi,
-      })
-
-      if (jadwalError) {
-        // Rollback previous inserts
-        await supabase.from("atraksi").delete().eq("nama_atraksi", formData.nama_atraksi)
-        await supabase.from("fasilitas").delete().eq("nama", formData.nama_atraksi)
-        throw jadwalError
-      }
-
-      // Insert into berpartisipasi table for each selected animal
-      const berpartisipasiData = formData.hewan_terlibat.map((hewanId) => ({
-        nama_fasilitas: formData.nama_atraksi,
-        id_hewan: hewanId,
-      }))
-
-      const { error: partisipasiError } = await supabase.from("berpartisipasi").insert(berpartisipasiData)
-
-      if (partisipasiError) {
-        // Rollback all previous inserts
-        await supabase.from("jadwal_penugasan").delete().eq("nama_atraksi", formData.nama_atraksi)
-        await supabase.from("atraksi").delete().eq("nama_atraksi", formData.nama_atraksi)
-        await supabase.from("fasilitas").delete().eq("nama", formData.nama_atraksi)
-        throw partisipasiError
+      if (!response.ok) {
+        throw new Error('Gagal menambahkan atraksi')
       }
 
       alert("Atraksi berhasil ditambahkan!")
@@ -359,30 +276,24 @@ export default function CreateAtraksiPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Hewan yang Terlibat:</label>
-                  <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
-                    {hewanList.length === 0 ? (
-                      <p className="text-gray-500">Tidak ada data hewan</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {hewanList.map((hewan) => (
-                          <div key={hewan.id} className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id={`hewan-${hewan.id}`}
-                              value={hewan.id}
-                              checked={formData.hewan_terlibat.includes(hewan.id)}
-                              onChange={handleHewanChange}
-                              className="mr-2"
-                            />
-                            <label htmlFor={`hewan-${hewan.id}`} className="text-sm">
-                              {hewan.nama} ({hewan.spesies})
-                            </label>
-                          </div>
-                        ))}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {hewanList.map((hewan) => (
+                      <div key={hewan.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`hewan-${hewan.id}`}
+                          value={hewan.id}
+                          checked={formData.hewan_terlibat.includes(hewan.id)}
+                          onChange={handleHewanChange}
+                          className="mr-2"
+                        />
+                        <label htmlFor={`hewan-${hewan.id}`} className="text-sm">
+                          {hewan.nama} ({hewan.spesies})
+                        </label>
                       </div>
-                    )}
+                    ))}
                   </div>
-                  {errors.hewan_terlibat && <p className="text-red-500 text-sm">{errors.hewan_terlibat}</p>}
+                  {errors.hewan_terlibat && <p className="text-red-500 text-sm mt-1">{errors.hewan_terlibat}</p>}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">

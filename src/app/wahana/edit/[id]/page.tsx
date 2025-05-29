@@ -1,88 +1,82 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
 import { Navbar } from "@/components/navbar"
 import { useAuth } from "@/contexts/auth-context"
-import { PlusIcon, XIcon } from "lucide-react"
 
-// Inisialisasi Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+interface Wahana {
+  nama_wahana: string
+  peraturan: string
+  kapasitas_max: number
+  jadwal_tanggal: string
+  jadwal_waktu: string
+}
 
 export default function EditWahanaPage() {
   const router = useRouter()
-  const { id } = useParams() // Mengambil ID dari URL
-  const { user, userRole, loading } = useAuth()
-  const [formData, setFormData] = useState({
+  const params = useParams()
+  const id = params?.id as string
+  const { user, userRole } = useAuth()
+  const [formData, setFormData] = useState<Wahana>({
     nama_wahana: "",
+    peraturan: "",
     kapasitas_max: 50,
     jadwal_tanggal: "",
     jadwal_waktu: "10:00",
-    peraturan: [""],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const nama_wahana = decodeURIComponent(id as string)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Check if user has permission to manage rides
+  // Check if user has permission to manage attractions
   const canManage = ["staf_admin", "penjaga_hewan"].includes(userRole || "")
 
   useEffect(() => {
-    // Fetch data regardless of auth state
+    // Hanya cek apakah user memiliki izin untuk mengelola
+    if (!user && !canManage) {
+      alert("Anda tidak memiliki izin untuk mengakses halaman ini")
+      router.push("/wahana")
+      return
+    }
+
+    if (!id) {
+      alert("ID wahana tidak ditemukan")
+      router.push("/wahana")
+      return
+    }
+
     fetchData()
-  }, []) // Remove loading dependency to prevent infinite loop
+  }, [user, canManage, router, id])
 
   const fetchData = async () => {
+    if (!id) return
+
     try {
       setIsLoading(true)
 
       // Fetch wahana data
-      const { data: wahanaData, error: wahanaError } = await supabase
-        .from("wahana")
-        .select("*")
-        .eq("nama_wahana", nama_wahana)
-        .single()
+      const response = await fetch(`/api/wahana/edit/${id}`)
+      if (!response.ok) {
+        throw new Error('Gagal mengambil data wahana')
+      }
+      const wahanaData = await response.json()
+      
+      // Format date and time from ISO string
+      const jadwal = new Date(wahanaData.jadwal)
+      const jadwal_tanggal = jadwal.toISOString().split('T')[0]
+      const jadwal_waktu = jadwal.toTimeString().slice(0, 5)
 
-      if (wahanaError) throw wahanaError
-
-      // Fetch fasilitas data
-      const { data: fasilitasData, error: fasilitasError } = await supabase
-        .from("fasilitas")
-        .select("*")
-        .eq("nama", nama_wahana)
-        .single()
-
-      if (fasilitasError) throw fasilitasError
-
-      // Parse date and time
-      const jadwalDate = new Date(fasilitasData.jadwal)
-      const year = jadwalDate.getFullYear()
-      const month = String(jadwalDate.getMonth() + 1).padStart(2, "0")
-      const day = String(jadwalDate.getDate()).padStart(2, "0")
-      const hours = String(jadwalDate.getHours()).padStart(2, "0")
-      const minutes = String(jadwalDate.getMinutes()).padStart(2, "0")
-
-      // Split peraturan by newline
-      const peraturanArray = wahanaData.peraturan ? wahanaData.peraturan.split("\n") : [""]
-
-      // Set form data
       setFormData({
         nama_wahana: wahanaData.nama_wahana,
-        kapasitas_max: fasilitasData.kapasitas_max,
-        jadwal_tanggal: `${year}-${month}-${day}`,
-        jadwal_waktu: `${hours}:${minutes}`,
-        peraturan: peraturanArray,
+        peraturan: wahanaData.peraturan,
+        kapasitas_max: wahanaData.kapasitas_max,
+        jadwal_tanggal,
+        jadwal_waktu,
       })
     } catch (error) {
       console.error("Error fetching data:", error)
       alert("Gagal memuat data")
-      router.push("/wahana")
     } finally {
       setIsLoading(false)
     }
@@ -102,39 +96,13 @@ export default function EditWahanaPage() {
     }
   }
 
-  const handlePeraturanChange = (index: number, value: string) => {
-    const updatedPeraturan = [...formData.peraturan]
-    updatedPeraturan[index] = value
-    setFormData({
-      ...formData,
-      peraturan: updatedPeraturan,
-    })
-  }
-
-  const addPeraturan = () => {
-    setFormData({
-      ...formData,
-      peraturan: [...formData.peraturan, ""],
-    })
-  }
-
-  const removePeraturan = (index: number) => {
-    const updatedPeraturan = [...formData.peraturan]
-    updatedPeraturan.splice(index, 1)
-    setFormData({
-      ...formData,
-      peraturan: updatedPeraturan,
-    })
-  }
-
   const validate = () => {
     const newErrors: Record<string, string> = {}
+    if (!formData.nama_wahana) newErrors.nama_wahana = "Nama wahana harus diisi"
+    if (!formData.peraturan) newErrors.peraturan = "Peraturan harus diisi"
     if (!formData.kapasitas_max || formData.kapasitas_max <= 0) newErrors.kapasitas_max = "Kapasitas harus lebih dari 0"
     if (!formData.jadwal_tanggal) newErrors.jadwal_tanggal = "Tanggal jadwal harus diisi"
     if (!formData.jadwal_waktu) newErrors.jadwal_waktu = "Waktu jadwal harus diisi"
-    if (formData.peraturan.length === 0 || !formData.peraturan.some((p) => p.trim() !== "")) {
-      newErrors.peraturan = "Minimal satu peraturan harus diisi"
-    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -142,50 +110,33 @@ export default function EditWahanaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validate()) return
+    if (!validate() || !id) return
 
     try {
-      setIsSaving(true)
+      setIsSubmitting(true)
+      const response = await fetch(`/api/wahana/edit/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
 
-      // Combine date and time
-      const jadwalDateTime = new Date(`${formData.jadwal_tanggal}T${formData.jadwal_waktu}:00`)
+      if (!response.ok) {
+        throw new Error('Gagal mengupdate wahana')
+      }
 
-      // Filter out empty rules
-      const filteredPeraturan = formData.peraturan.filter((p) => p.trim() !== "")
-      const peraturanText = filteredPeraturan.join("\n")
-
-      // Update fasilitas table
-      const { error: fasilitasError } = await supabase
-        .from("fasilitas")
-        .update({
-          jadwal: jadwalDateTime.toISOString(),
-          kapasitas_max: formData.kapasitas_max,
-        })
-        .eq("nama", nama_wahana)
-
-      if (fasilitasError) throw fasilitasError
-
-      // Update wahana table
-      const { error: wahanaError } = await supabase
-        .from("wahana")
-        .update({
-          peraturan: peraturanText,
-        })
-        .eq("nama_wahana", nama_wahana)
-
-      if (wahanaError) throw wahanaError
-
-      alert("Wahana berhasil diperbarui!")
+      alert("Wahana berhasil diupdate!")
       router.push("/wahana")
     } catch (error) {
       console.error("Error updating wahana:", error)
-      alert("Gagal memperbarui wahana")
+      alert("Gagal mengupdate wahana")
     } finally {
-      setIsSaving(false)
+      setIsSubmitting(false)
     }
   }
 
-  if (loading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -222,9 +173,25 @@ export default function EditWahanaPage() {
                     id="nama_wahana"
                     name="nama_wahana"
                     value={formData.nama_wahana}
-                    disabled
-                    className="w-full border rounded-md p-2 bg-gray-100"
+                    onChange={handleChange}
+                    className="w-full border rounded-md p-2"
                   />
+                  {errors.nama_wahana && <p className="text-red-500 text-sm">{errors.nama_wahana}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="peraturan" className="block text-sm font-medium text-gray-700">
+                    Peraturan:
+                  </label>
+                  <textarea
+                    id="peraturan"
+                    name="peraturan"
+                    value={formData.peraturan}
+                    onChange={handleChange}
+                    className="w-full border rounded-md p-2"
+                    rows={4}
+                  />
+                  {errors.peraturan && <p className="text-red-500 text-sm">{errors.peraturan}</p>}
                 </div>
 
                 <div>
@@ -278,39 +245,6 @@ export default function EditWahanaPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Peraturan:</label>
-                  {formData.peraturan.map((peraturan, index) => (
-                    <div key={index} className="flex items-start mb-2">
-                      <textarea
-                        value={peraturan}
-                        onChange={(e) => handlePeraturanChange(index, e.target.value)}
-                        className="w-full border rounded-md p-2 mr-2"
-                        rows={2}
-                        placeholder={`Peraturan ${index + 1}`}
-                      />
-                      {formData.peraturan.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removePeraturan(index)}
-                          className="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
-                        >
-                          <XIcon size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addPeraturan}
-                    className="flex items-center text-sm text-blue-600 hover:text-blue-800 mt-1"
-                  >
-                    <PlusIcon size={16} className="mr-1" />
-                    <span>Tambah Peraturan</span>
-                  </button>
-                  {errors.peraturan && <p className="text-red-500 text-sm mt-1">{errors.peraturan}</p>}
-                </div>
-
                 <div className="flex justify-end gap-3 pt-4">
                   <button
                     type="button"
@@ -321,10 +255,10 @@ export default function EditWahanaPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSaving}
-                    className="px-4 py-2 bg-[#FF912F] text-white rounded hover:bg-[#FF912F]/90 transition-colors"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-[#FF912F] text-white rounded hover:bg-[#FF912F]/90 transition-colors disabled:opacity-50"
                   >
-                    {isSaving ? "Menyimpan..." : "SIMPAN PERUBAHAN"}
+                    {isSubmitting ? "MENYIMPAN..." : "SIMPAN"}
                   </button>
                 </div>
               </form>

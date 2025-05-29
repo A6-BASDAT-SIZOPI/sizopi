@@ -6,10 +6,16 @@ import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 
 interface Reservasi {
   username_p: string
@@ -40,15 +46,6 @@ export default function EditReservasiPage() {
   }
   const { toast } = useToast()
 
-    const formatTime = (timeStr: string) => {
-      try {
-        const date = new Date(timeStr)
-        return format(date, "HH:mm")
-      } catch (error) {
-        return timeStr
-      }
-    }
-
   const usernameDec = decodeURIComponent(username)
   const fasilitasDec = decodeURIComponent(nama_fasilitas)
 
@@ -61,6 +58,15 @@ export default function EditReservasiPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const formatTime = (timeStr: string) => {
+    try {
+      const date = new Date(timeStr)
+      return format(date, "HH:mm")
+    } catch {
+      return timeStr
+    }
+  }
 
   useEffect(() => {
     if (!loading) {
@@ -76,7 +82,7 @@ export default function EditReservasiPage() {
   async function fetchDetail() {
     try {
       setIsLoading(true)
-      // 1) fetch all reservations
+      // ambil data user reservasi
       const res = await fetch(`/api/reservasi/user/${encodeURIComponent(usernameDec)}`)
       if (!res.ok) throw new Error("Gagal memuat reservasi")
       const all: any[] = await res.json()
@@ -84,20 +90,16 @@ export default function EditReservasiPage() {
       if (!r) throw new Error("Reservasi tidak ditemukan")
       setReservasi(r)
       setForm({
-        tanggal: r.tanggal_kunjungan.substring(0,10),
+        tanggal: r.tanggal_kunjungan.substring(0, 10),
         jumlah: r.jumlah_tiket,
         status: r.status,
       })
-
-      // 2) fetch facility detail
+      // ambil detail fasilitas (atraksi/wahana)
       const typ = r.jenis as "atraksi" | "wahana"
       const detailRes = await fetch(`/api/reservasi/${typ}/${encodeURIComponent(fasilitasDec)}`)
       if (!detailRes.ok) throw new Error("Gagal memuat detail fasilitas")
-      const d = await detailRes.json()
-      setDetail(d)
-
+      setDetail(await detailRes.json())
     } catch (err: any) {
-      console.error(err)
       toast({ title: "Error", description: err.message, variant: "destructive" })
       router.push("/reservasi/tiket-anda")
     } finally {
@@ -109,8 +111,9 @@ export default function EditReservasiPage() {
     e.preventDefault()
     if (!reservasi) return
     setIsSubmitting(true)
+  
     try {
-      const res = await fetch("/api/reservasi/edit", {
+      const response = await fetch("/api/reservasi/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -121,19 +124,41 @@ export default function EditReservasiPage() {
           status: form.status,
         }),
       })
-      if (!res.ok) {
-        const b = await res.json()
-        throw new Error(b.message || "Gagal menyimpan")
+  
+      if (!response.ok) {
+        // default error message
+        let errorMsgToShow = `Gagal memperbarui reservasi. Status: ${response.status}`
+  
+        try {
+          // try to parse JSON
+          const errorData = await response.json()
+          errorMsgToShow = errorData.message || JSON.stringify(errorData)
+        } catch (jsonError) {
+          // fallback to text if invalid JSON
+          const textError = await response.text()
+          console.error(
+            "Server returned non-JSON for POST error:",
+            textError.substring(0, 200)
+          )
+        }
+  
+        console.error("Error editing reservation (client-side):", errorMsgToShow)
+        alert(errorMsgToShow)
+        return
       }
-      toast({ title: "Berhasil", description: "Reservasi diperbarui" })
-      // redirect based on role
+  
+      // success path
+      const payload = await response.json()
+      toast({ title: "Sukses", description: payload.message })
+  
       if (userRole === "staf_admin") {
         router.push("/reservasi/admin")
       } else {
         router.push("/reservasi/tiket-anda")
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" })
+      console.error("Unexpected error in handleSubmit:", err)
+      alert(err.message || "Terjadi kesalahan tak terduga")
     } finally {
       setIsSubmitting(false)
     }
@@ -152,24 +177,20 @@ export default function EditReservasiPage() {
             <>
               <p className="font-semibold">Nama Atraksi:</p>
               <p className="mb-2">{detail.nama_atraksi}</p>
-
               <p className="font-semibold">Lokasi:</p>
               <p className="mb-2">{detail.lokasi}</p>
             </>
           )}
-
           {reservasi?.jenis === "wahana" && detail && "nama_wahana" in detail && (
             <>
               <p className="font-semibold">Nama Wahana:</p>
               <p className="mb-2">{detail.nama_wahana}</p>
-
               <p className="font-semibold">Peraturan:</p>
               <p className="mb-2">{detail.peraturan}</p>
             </>
           )}
-
           <p className="font-semibold">Jam:</p>
-          <p className="mb-2">{formatTime(detail?.jadwal)}</p>
+          <p className="mb-2">{formatTime(detail?.jadwal || "")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
@@ -179,7 +200,7 @@ export default function EditReservasiPage() {
               id="tanggal"
               type="date"
               value={form.tanggal}
-              onChange={(e) => setForm(f => ({ ...f, tanggal: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, tanggal: e.target.value }))}
             />
           </div>
 
@@ -190,16 +211,13 @@ export default function EditReservasiPage() {
               type="number"
               min={1}
               value={form.jumlah}
-              onChange={(e) => setForm(f => ({ ...f, jumlah: +e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, jumlah: +e.target.value }))}
             />
           </div>
 
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select
-              value={form.status}
-              onValueChange={(v) => setForm(f => ({ ...f, status: v }))}
-            >
+            <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}>
               <SelectTrigger id="status">
                 <SelectValue />
               </SelectTrigger>
@@ -211,18 +229,16 @@ export default function EditReservasiPage() {
           </div>
 
           <div className="flex justify-end space-x-2">
-                <Button
-                variant="outline"
-                disabled={isSubmitting}
-                onClick={() => {
-                  if (userRole === "staf_admin") {
-                    router.push("/reservasi/admin")
-                  } else {
-                    router.push("/reservasi/tiket-anda")
-                  }
-                }}
-              >
-                Batal
+            <Button
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={() => {
+                userRole === "staf_admin"
+                  ? router.push("/reservasi/admin")
+                  : router.push("/reservasi/tiket-anda")
+              }}
+            >
+              Batal
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Menyimpan..." : "Simpan"}
