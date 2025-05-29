@@ -107,11 +107,10 @@ export default function EditReservasiPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!reservasi) return
     setIsSubmitting(true)
-  
+
     try {
       const response = await fetch("/api/reservasi/edit", {
         method: "POST",
@@ -124,7 +123,7 @@ export default function EditReservasiPage() {
           status: form.status,
         }),
       })
-  
+
       if (!response.ok) {
         // default error message
         let errorMsgToShow = `Gagal memperbarui reservasi. Status: ${response.status}`
@@ -146,19 +145,19 @@ export default function EditReservasiPage() {
         alert(errorMsgToShow)
         return
       }
-  
-      // success path
-      const payload = await response.json()
-      toast({ title: "Sukses", description: payload.message })
-  
-      if (userRole === "staf_admin") {
-        router.push("/reservasi/admin")
-      } else {
-        router.push("/reservasi/tiket-anda")
-      }
+
+      toast({
+        title: "Sukses",
+        description: "Reservasi berhasil diperbarui",
+      })
+      router.push(userRole === "staf_admin" ? "/reservasi/admin" : "/reservasi/tiket-anda")
     } catch (err: any) {
-      console.error("Unexpected error in handleSubmit:", err)
-      alert(err.message || "Terjadi kesalahan tak terduga")
+      console.error("Error updating reservasi:", err)
+      toast({
+        title: "Error",
+        description: err.message || "Terjadi kesalahan saat memperbarui reservasi",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
