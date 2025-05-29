@@ -132,13 +132,13 @@ export default function BookingWahanaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+  
     if (!validateForm() || !wahana) {
       return
     }
-
+  
     setIsSubmitting(true)
-
+  
     try {
       const response = await fetch("/api/reservasi/create", {
         method: "POST",
@@ -150,30 +150,29 @@ export default function BookingWahanaPage() {
           jumlah_tiket: formData.jumlah_tiket,
         }),
       })
-
+  
+      const payload = await response.json()
+  
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Gagal membuat reservasi")
+        // show the trigger’s error message in an alert
+        alert(`Gagal membuat reservasi:\n${payload.message}`)
+        return
       }
-
+  
+      // success
       toast({
         title: "Sukses",
         description: "Reservasi berhasil dibuat",
       })
-
       router.push("/reservasi/tiket-anda")
-    } catch (error: any) {
-      console.error("Error creating reservation:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Gagal membuat reservasi",
-        variant: "destructive",
-      })
+    } catch (err: any) {
+      console.error("Unexpected error creating reservation:", err)
+      alert("Terjadi kesalahan:\n" + (err.message || String(err)))
     } finally {
       setIsSubmitting(false)
     }
   }
-
+  
   const formatTime = (timeStr: string) => {
     try {
       const date = new Date(timeStr)

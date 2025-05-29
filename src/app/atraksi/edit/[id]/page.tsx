@@ -26,24 +26,40 @@ interface Hewan {
   spesies: string
 }
 
-export default function EditAtraksiPage() {
+interface FormData {
+  lokasi: string;
+  kapasitas_max: number;
+  jadwal_tanggal: string;
+  jadwal_waktu: string;
+  pelatih: string;
+  hewan_terlibat: string[];
+}
+
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function EditAtraksi({ params }: PageProps) {
   const router = useRouter()
-  const { id } = useParams() // Mengambil ID dari URL
   const { user, userRole, loading } = useAuth()
-  const [formData, setFormData] = useState({
-    nama_atraksi: "",
-    lokasi: "",
-    kapasitas_max: 50,
-    jadwal_tanggal: "",
-    jadwal_waktu: "10:00",
-    pelatih: "",
-    hewan_terlibat: [] as string[],
+  const [formData, setFormData] = useState<FormData>({
+    lokasi: '',
+    kapasitas_max: 0,
+    jadwal_tanggal: '',
+    jadwal_waktu: '',
+    pelatih: '',
+    hewan_terlibat: []
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [pelatihList, setPelatihList] = useState<Pelatih[]>([])
   const [hewanList, setHewanList] = useState<Hewan[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const nama_atraksi = decodeURIComponent(id as string)
+  const [error, setError] = useState<string | null>(null)
+  const [rotasiMessage, setRotasiMessage] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const nama_atraksi = decodeURIComponent(params.id)
 
   // Check if user has permission to manage attractions
   const canManage = ["staf_admin", "penjaga_hewan"].includes(userRole || "")
@@ -183,7 +199,6 @@ export default function EditAtraksiPage() {
 
       // Set form data
       setFormData({
-        nama_atraksi: atraksiData.nama_atraksi,
         lokasi: atraksiData.lokasi,
         kapasitas_max: fasilitasData.kapasitas_max,
         jadwal_tanggal: `${year}-${month}-${day}`,
@@ -245,77 +260,49 @@ export default function EditAtraksiPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+    setRotasiMessage(null)
+    setShowSuccess(false)
+
     if (!validate()) return
 
     try {
-      // Combine date and time
-      const jadwalDateTime = new Date(`${formData.jadwal_tanggal}T${formData.jadwal_waktu}:00`)
+      const jadwalDateTime = `${formData.jadwal_tanggal}T${formData.jadwal_waktu}:00`
 
-      // Update fasilitas table
-      const { error: fasilitasError } = await supabase
-        .from("fasilitas")
-        .update({
-          jadwal: jadwalDateTime.toISOString(),
-          kapasitas_max: formData.kapasitas_max,
-        })
-        .eq("nama", nama_atraksi)
+      const response = await fetch(`/api/atraksi/edit/${nama_atraksi}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          jadwal_tanggal: formData.jadwal_tanggal,
+          jadwal_waktu: formData.jadwal_waktu,
+        }),
+      })
 
-      if (fasilitasError) throw fasilitasError
+      const data = await response.json()
 
-      // Update atraksi table
-      const { error: atraksiError } = await supabase
-        .from("atraksi")
-        .update({
-          lokasi: formData.lokasi,
-        })
-        .eq("nama_atraksi", nama_atraksi)
-
-      if (atraksiError) throw atraksiError
-
-      // Check if pelatih has changed
-      const { data: currentPelatih, error: pelatihCheckError } = await supabase
-        .from("jadwal_penugasan")
-        .select("username_lh")
-        .eq("nama_atraksi", nama_atraksi)
-        .order("tgl_penugasan", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (currentPelatih?.username_lh !== formData.pelatih) {
-        // Insert new jadwal_penugasan entry
-        const { error: jadwalError } = await supabase.from("jadwal_penugasan").insert({
-          username_lh: formData.pelatih,
-          tgl_penugasan: new Date().toISOString(),
-          nama_atraksi: nama_atraksi,
-        })
-
-        if (jadwalError) throw jadwalError
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mengupdate atraksi')
       }
 
-      // Update berpartisipasi table
-      // First delete all existing entries
-      const { error: deletePartisipasiError } = await supabase
-        .from("berpartisipasi")
-        .delete()
-        .eq("nama_fasilitas", nama_atraksi)
-
-      if (deletePartisipasiError) throw deletePartisipasiError
-
-      // Then insert new entries
-      const berpartisipasiData = formData.hewan_terlibat.map((hewanId) => ({
-        nama_fasilitas: nama_atraksi,
-        id_hewan: hewanId,
-      }))
-
-      const { error: partisipasiError } = await supabase.from("berpartisipasi").insert(berpartisipasiData)
-
-      if (partisipasiError) throw partisipasiError
-
-      alert("Atraksi berhasil diperbarui!")
-      router.push("/atraksi")
-    } catch (error) {
-      console.error("Error updating atraksi:", error)
-      alert("Gagal memperbarui atraksi")
+      if (data.rotasiMessage) {
+        setRotasiMessage(data.rotasiMessage)
+        setTimeout(() => {
+          router.push('/atraksi')
+        }, 3000)
+      } else {
+        setShowSuccess(true)
+        setTimeout(() => {
+          router.push('/atraksi')
+        }, 2000)
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -346,21 +333,25 @@ export default function EditAtraksiPage() {
             <div className="h-2 bg-[#FF912F]" />
             <div className="p-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-6">FORM EDIT ATRAKSI</h1>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="nama_atraksi" className="block text-sm font-medium text-gray-700">
-                    Nama Atraksi:
-                  </label>
-                  <input
-                    type="text"
-                    id="nama_atraksi"
-                    name="nama_atraksi"
-                    value={formData.nama_atraksi}
-                    disabled
-                    className="w-full border rounded-md p-2 bg-gray-100"
-                  />
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                  {error}
                 </div>
+              )}
 
+              {rotasiMessage && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                  {rotasiMessage}
+                </div>
+              )}
+
+              {showSuccess && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                  Atraksi berhasil diupdate!
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="lokasi" className="block text-sm font-medium text-gray-700">
                     Lokasi:

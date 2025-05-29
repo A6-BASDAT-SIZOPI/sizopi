@@ -10,7 +10,6 @@ import { PencilIcon, TrashIcon, PlusIcon, XIcon } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 
-// Inisialisasi Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -64,6 +63,7 @@ export default function DataWahana() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [wahanaToDelete, setWahanaToDelete] = useState<Wahana | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Check if user has permission to manage attractions
   const canManage = ["staf_admin", "penjaga_hewan",].includes(userRole || "")
@@ -76,36 +76,17 @@ export default function DataWahana() {
   async function fetchData() {
     try {
       setIsLoading(true)
+      setError(null)
 
-      // Fetch fasilitas data
-      const { data: fasilitasData, error: fasilitasError } = await supabase.from("fasilitas").select("*")
-
-      if (fasilitasError) throw fasilitasError
-
-      // Fetch wahana data
-      const { data: wahanaData, error: wahanaError } = await supabase.from("wahana").select("*")
-
-      if (wahanaError) throw wahanaError
-
-      // Combine data
-      const combinedData: Wahana[] = []
-
-      for (const fasilitas of fasilitasData) {
-        const wahanaInfo = wahanaData.find((w) => w.nama_wahana === fasilitas.nama)
-
-        if (wahanaInfo) {
-          combinedData.push({
-            nama_wahana: fasilitas.nama,
-            peraturan: wahanaInfo.peraturan,
-            kapasitas_max: fasilitas.kapasitas_max,
-            jadwal: fasilitas.jadwal,
-          })
-        }
+      const response = await fetch('/api/wahana')
+      if (!response.ok) {
+        throw new Error('Gagal mengambil data wahana')
       }
-
-      setWahana(combinedData)
-    } catch (error) {
-      console.error("Error fetching data:", error)
+      const data = await response.json()
+      setWahana(data)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Terjadi kesalahan saat mengambil data')
     } finally {
       setIsLoading(false)
     }
@@ -120,32 +101,25 @@ export default function DataWahana() {
     if (!wahanaToDelete) return
 
     try {
-      // Delete from wahana
-      const { error: wahanaError } = await supabase
-        .from("wahana")
-        .delete()
-        .eq("nama_wahana", wahanaToDelete.nama_wahana)
+      const response = await fetch('/api/wahana', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nama_wahana: wahanaToDelete.nama_wahana }),
+      })
 
-      if (wahanaError) throw wahanaError
+      if (!response.ok) {
+        throw new Error('Gagal menghapus wahana')
+      }
 
-      // Delete from berpartisipasi
-      const { error: partisipasiError } = await supabase
-        .from("berpartisipasi")
-        .delete()
-        .eq("nama_fasilitas", wahanaToDelete.nama_wahana)
-
-      // Finally delete from fasilitas
-      const { error: fasilitasError } = await supabase.from("fasilitas").delete().eq("nama", wahanaToDelete.nama_wahana)
-
-      if (fasilitasError) throw fasilitasError
-
-      setWahana((prev) => prev.filter((w) => w.nama_wahana !== wahanaToDelete.nama_wahana))
+      // Refresh data setelah berhasil menghapus
+      await fetchData()
       setIsDeleteModalOpen(false)
       setWahanaToDelete(null)
-      alert("Wahana berhasil dihapus!")
-    } catch (error) {
-      console.error("Error deleting wahana:", error)
-      alert("Gagal menghapus wahana!")
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Terjadi kesalahan saat menghapus data')
     }
   }
 

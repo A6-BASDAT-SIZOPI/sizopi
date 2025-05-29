@@ -88,90 +88,12 @@ export default function DataAtraksi() {
       setIsLoading(true)
       setError(null)
 
-      // 1️⃣ Ambil semua data yang dibutuhkan
-      const [{ data: fasilitasData, error: eFas },
-             { data: atraksiData,   error: eAtr }] = await Promise.all([
-        supabase.from('fasilitas').select('*'),
-        supabase.from('atraksi').select('*'),
-      ])
-      if (eFas) throw eFas
-      if (eAtr) throw eAtr
-
-      // Fetch jadwal penugasan data
-      console.log("Fetching jadwal penugasan data...")
-      const { data: jadwalData, error: jadwalError } = await supabase.from("jadwal_penugasan").select("*")
-
-      if (jadwalError) {
-        console.error("Error fetching jadwal:", jadwalError)
-        throw jadwalError
+      const response = await fetch('/api/atraksi')
+      if (!response.ok) {
+        throw new Error('Gagal mengambil data atraksi')
       }
-
-      // Fetch berpartisipasi data
-      console.log("Fetching berpartisipasi data...")
-      const { data: partisipasiData, error: partisipasiError } = await supabase.from("berpartisipasi").select("*")
-
-      if (partisipasiError) {
-        console.error("Error fetching partisipasi:", partisipasiError)
-        throw partisipasiError
-      }
-
-      // 3️⃣ Ambil pengguna untuk mapping nama
-      const { data: penggunaData, error: eUser } = await supabase
-        .from('pengguna')
-        .select('username, nama_depan, nama_belakang')
-      if (eUser) throw eUser
-
-      const penggunaMap: Record<string, string> = {}
-      penggunaData?.forEach(u => {
-        penggunaMap[u.username] = `${u.nama_depan} ${u.nama_belakang}`
-      })
-
-      // 4️⃣ Ambil hewan untuk mapping nama (optional, jika masih pakai)
-      const { data: hewanData, error: eHew } = await supabase
-        .from('hewan')
-        .select('id, nama')
-      if (eHew) throw eHew
-
-      const hewanMap: Record<string, string> = {}
-      hewanData?.forEach(h => {
-        hewanMap[h.id] = h.nama
-      })
-
-      // 5️⃣ Gabungkan menjadi array Atraksi[]
-      const combined: Atraksi[] = []
-
-      for (const fas of fasilitasData || []) {
-        const info = atraksiData!.find(a => a.nama_atraksi === fas.nama)
-        if (!info) continue
-
-        // jadwal terbaru untuk fasilitas ini
-        const jadwalInfo = jadwalData
-        ?.filter((j) => j.nama_atraksi === fas.nama)
-        .sort((a, b) => new Date(b.tgl_penugasan).getTime() - new Date(a.tgl_penugasan).getTime())[0]
-
-        // daftar hewan
-        const daftarHewan = (partisipasiData || [])
-          .filter(p => p.nama_fasilitas === fas.nama)
-          .map(p => hewanMap[p.id_hewan] || p.id_hewan)
-
-        // full name pelatih
-        const jadwalStr = jadwalInfo?.tgl_penugasan ?? ''
-        const usernamePelatih = jadwalInfo?.username_lh
-        const fullNamePelatih = usernamePelatih
-          ? (penggunaMap[usernamePelatih] || usernamePelatih)
-          : '-'
-
-        combined.push({
-          nama_atraksi:   fas.nama,
-          lokasi:         info.lokasi,
-          kapasitas_max:  fas.kapasitas_max,
-          jadwal:         jadwalStr,
-          pelatih:        fullNamePelatih,
-          hewan_terlibat: daftarHewan,
-        })
-      }
-
-      setAtraksi(combined)
+      const data = await response.json()
+      setAtraksi(data)
     } catch (err: any) {
       console.error(err)
       setError(err.message || 'Terjadi kesalahan saat mengambil data')
@@ -189,45 +111,25 @@ export default function DataAtraksi() {
     if (!atraksiToDelete) return
 
     try {
-      // First delete from berpartisipasi
-      const { error: partisipasiError } = await supabase
-        .from("berpartisipasi")
-        .delete()
-        .eq("nama_fasilitas", atraksiToDelete.nama_atraksi)
+      const response = await fetch('/api/atraksi', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nama_atraksi: atraksiToDelete.nama_atraksi }),
+      })
 
-      if (partisipasiError) throw partisipasiError
+      if (!response.ok) {
+        throw new Error('Gagal menghapus atraksi')
+      }
 
-      // Delete from jadwal_penugasan
-      const { error: jadwalError } = await supabase
-        .from("jadwal_penugasan")
-        .delete()
-        .eq("nama_atraksi", atraksiToDelete.nama_atraksi)
-
-      if (jadwalError) throw jadwalError
-
-      // Delete from atraksi
-      const { error: atraksiError } = await supabase
-        .from("atraksi")
-        .delete()
-        .eq("nama_atraksi", atraksiToDelete.nama_atraksi)
-
-      if (atraksiError) throw atraksiError
-
-      // Finally delete from fasilitas
-      const { error: fasilitasError } = await supabase
-        .from("fasilitas")
-        .delete()
-        .eq("nama", atraksiToDelete.nama_atraksi)
-
-      if (fasilitasError) throw fasilitasError
-
-      setAtraksi((prev) => prev.filter((a) => a.nama_atraksi !== atraksiToDelete.nama_atraksi))
+      // Refresh data setelah berhasil menghapus
+      await fetchData()
       setIsDeleteModalOpen(false)
       setAtraksiToDelete(null)
-      alert("Atraksi berhasil dihapus!")
-    } catch (error: any) {
-      console.error("Error deleting atraksi:", error)
-      alert("Gagal menghapus atraksi: " + (error.message || JSON.stringify(error)))
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Terjadi kesalahan saat menghapus data')
     }
   }
 
@@ -315,8 +217,8 @@ export default function DataAtraksi() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {atraksi.map((item) => (
-                        <tr key={item.nama_atraksi} className="hover:bg-gray-50">
+                      {atraksi.map((item, index) => (
+                        <tr key={`${item.nama_atraksi}-${index}`} className="hover:bg-gray-50">
                           <td className="px-4 py-4 whitespace-nowrap">{item.nama_atraksi}</td>
                           <td className="px-4 py-4 whitespace-nowrap">{item.lokasi}</td>
                           <td className="px-4 py-4 whitespace-nowrap">{item.kapasitas_max} orang</td>
