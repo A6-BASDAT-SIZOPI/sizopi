@@ -10,6 +10,10 @@ interface UserProfile {
   email: string
   nama_lengkap: string
   role: UserRole
+  no_telepon: string
+  nama_depan: string
+  nama_belakang: string
+  nama_tengah: string
 }
 
 interface AuthContextType {
